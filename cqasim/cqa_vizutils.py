@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Visualization function for the Cqa Simulator."""
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -44,4 +45,5 @@ def animate_1d_activity(V_data, o_data, data, ymin=-1, ymax=1, pause=0.2):
 
 
 def animate_2d_activity(data, ymin=-1, ymax=1, pause=0.2):
+    # TODO: Implement
     pass

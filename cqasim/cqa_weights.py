@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Weight function for the CqaSimulator."""
 import numpy as np
 
 

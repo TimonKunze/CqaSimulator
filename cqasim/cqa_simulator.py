@@ -12,12 +12,12 @@ import numpy as np
 from pathlib import Path
 from typing import Optional, Dict, Any
 
-from src.cqa_defaults import CqaDefaults
-from src.cqa_gendata import gen_p_data
-from src.cqa_weights import create_hebb_p_weights
-from src.cqa_utils import get_loop_indices, pad_with_nans
-from src.cqa_vizutils import animate_1d_activity
-from src.cqa_vectutils import calc_hessian, calc_sparsity, \
+from cqasim.cqa_defaults import CqaDefaults
+from cqasim.cqa_gendata import gen_p_data
+from cqasim.cqa_weights import create_hebb_p_weights
+from cqasim.cqa_utils import get_loop_indices, pad_with_nans
+from cqasim.cqa_vizutils import animate_1d_activity
+from cqasim.cqa_vectutils import calc_hessian, calc_sparsity, \
     calc_support, cosine_similarity, one_step_dynamics, relu, \
     cosine_similarity_vec, std_cdm
 

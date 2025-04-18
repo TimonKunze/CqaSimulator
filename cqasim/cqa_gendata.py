@@ -2,8 +2,8 @@
 import numpy as np
 from itertools import combinations
 
-from src.cqa_utils import pad_with_nans
-from src.cqa_vectutils import broken_gaussian_1d, gaussian_1d
+from cqasim.cqa_utils import pad_with_nans
+from cqasim.cqa_vectutils import broken_gaussian_1d, gaussian_1d
 
 
 def gen_p_data(P, N, T, L, M,

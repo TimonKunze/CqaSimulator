@@ -6,9 +6,7 @@ Designed for speed; compatible with Numba acceleration.
 import numpy as np
 import numba
 
-import src.utils as sut
-
-from src.cqa_utils import get_loop_indices
+from cqasim.cqa_utils import get_loop_indices
 
 
 # numba.set_num_threads(40)  # Set to desired number of threads
@@ -27,7 +25,7 @@ def auto_numba(f):
     # return f
 
 
-@sut.auto_numba
+@auto_numba
 def one_step_dynamics(general_mean, Vc, J, g, kb):
     """Update the state V of a system based on input currents and a transfer function.
 
@@ -53,13 +51,13 @@ def one_step_dynamics(general_mean, Vc, J, g, kb):
     return V
 
 
-@sut.auto_numba
+@auto_numba
 def relu(h):
     """RELU or threshold-linear transfer function."""
     return np.maximum(0, h)
 
 
-@sut.auto_numba
+@auto_numba
 def b_function(v, desired_mean, omega):
     """Cubic transformation function applied to input v.
 
@@ -72,7 +70,7 @@ def b_function(v, desired_mean, omega):
     return 4 * omega * (v - desired_mean) ** 3
 
 
-@sut.auto_numba
+@auto_numba
 def cosine_similarity_vec(d, V):
     """Calculate the vectorized cosine similarity.
 
@@ -97,7 +95,7 @@ def cosine_similarity_vec(d, V):
     return dot_product / (V_magnitude * d_magnitude)
 
 
-@sut.auto_numba
+@auto_numba
 def cosine_similarity(v1, v2):
     """Compute the cosine similarity between two vectors."""
     norm_v1 = np.linalg.norm(v1)
@@ -109,7 +107,7 @@ def cosine_similarity(v1, v2):
     return np.dot(v1, v2) / (norm_v1 * norm_v2)
 
 
-@sut.auto_numba
+@auto_numba
 def calc_hessian(v, general_mean, kb, N):
     """Compute scaled squared deviation of `v` from `general_mean`, normalized by `N`.
 
@@ -134,7 +132,7 @@ def calc_hessian(v, general_mean, kb, N):
     return a
 
 
-@sut.auto_numba
+@auto_numba
 def calc_sparsity(V):
     # TODO: Function unused
     """Calculate the sparcity or flatness in neural activity.
@@ -147,13 +145,13 @@ def calc_sparsity(V):
     return np.mean(V) ** 2 / np.mean(V**2)
 
 
-@sut.auto_numba
+@auto_numba
 def calc_support(V, thresh=0.02):
     """Calculate the support or active fraction of neural activiy."""
     return np.sum(V > thresh) / len(V)
 
 
-@sut.auto_numba
+@auto_numba
 def std_cdm(o1):
     """Compute circular dispersion measure (CDM) for weighted data.
 
@@ -192,7 +190,7 @@ def std_cdm(o1):
     return delq  # normalized circular standard deviation.
 
 
-@sut.auto_numba
+@auto_numba
 def gaussian_1d(dist, radius):
     """Compute 1D Gaussian for given distance and radius (stand. deviation).
 
@@ -202,7 +200,7 @@ def gaussian_1d(dist, radius):
     return np.exp(-dist**2 / (2 * radius**2)) / np.sqrt(2 * np.pi)
 
 
-@sut.auto_numba
+@auto_numba
 def broken_gaussian_1d(x, x_center, C, radius, L):
     """Compute clipped Gaussian with periodic boundary conditions in 1D.
 
@@ -230,7 +228,7 @@ def broken_gaussian_1d(x, x_center, C, radius, L):
     return np.maximum(V, 0)
 
 
-### UNFINISHED ANALYSES!
+### TODO: UNFINISHED ANALYSES!
 
 def count_decreasing_steps(values: np.ndarray) -> int:  # TODO: necessary?
     """Count decreasing transitions in an array.

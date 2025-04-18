@@ -4,7 +4,7 @@
 import os
 import numpy as np
 
-from src.cqa_defaults import CqaDefaults
+from cqasim.cqa_defaults import CqaDefaults
 
 
 class CqaFileLoader(CqaDefaults):
