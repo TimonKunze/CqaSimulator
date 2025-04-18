@@ -21,8 +21,6 @@ from cqasim.cqa_vectutils import calc_hessian, calc_sparsity, \
     calc_support, cosine_similarity, one_step_dynamics, relu, \
     cosine_similarity_vec, std_cdm
 
-from src.config import PATHS
-
 
 class CqaSimulator(CqaDefaults):
     """Simulator class for the model."""
