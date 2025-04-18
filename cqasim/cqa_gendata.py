@@ -24,7 +24,6 @@ def gen_p_data(P, N, T, L, M,
     diams_per_nrn = [] #np.zeros((P, N))
     heights_per_nrn = [] # np.zeros((P, N))
     fields_per_nrn = [] # np.zeros((P, N))
-    # print("fielskdf", fields_per_nrn.shape)
 
     for p in range(P):
         # Generate simplified data (i.e. only variation in peak width)
@@ -56,9 +55,11 @@ def gen_p_data(P, N, T, L, M,
             if correlated_dims == "max":
                 if seed is None:
                     seed = 1
-                print("NOTE: Data is necessarily seeded for correlated_dims=='max'.")
+                if verbose:
+                    print("NOTE: Data is necessarily seeded for correlated_dims=='max'.")
             elif correlated_dims == "random":
-                print("NOTE: Data is not seeded because correlated_dims=='random'.")
+                if verbose:
+                    print("NOTE: Data is not seeded because correlated_dims=='random'.")
                 seed = None
             else:
                 # Raise error for unsupported correlation mode
@@ -81,8 +82,6 @@ def gen_p_data(P, N, T, L, M,
 
     if verbose > 0:
         print(f"Avg. corr. betw. dimensions = {avg_dim_correlations(dt):.3f}.")
-
-    print("fields", np.shape(fields_per_nrn))
 
     return dt, diams_per_nrn, heights_per_nrn, fields_per_nrn
 
@@ -246,8 +245,6 @@ def gen_simplified_data(
     # data = np.exp(-dist**2 / (2 * radius**2)) / np.sqrt(2 * np.pi)
     data = gaussian_1d(dist, radius)
     heights_per_nrn = 1 / (radius * np.sqrt(2 * np.pi))
-    print("height", heights_per_nrn)
-    print("data shape", data.shape)
 
     data = data.T  # Transpose to match original (N, T) shape
 

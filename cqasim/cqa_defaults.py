@@ -32,8 +32,8 @@ class CqaDefaults:
             "mean_diameter": 1.57,  # field mean
             "var_diameter": 2.0,  # field width diameter
             "correlated_peaks": False,  # Corrs. between field height and diameter
-            "simplified_data": False,
-            "correlated_dimensions": "max",  # only generating data for p > 1
+            "simplified_data": True,
+            "correlated_dimensions": "min",  # only generating data for p > 1
             "mean_height": 1.549,
             "var_height": 0.0,
             "exponent": 0,
@@ -66,7 +66,8 @@ class CqaDefaults:
 
     def build_fn(self):
         """Build file name from default parameters."""
-        if not self.par:  # TODO: test with simulator, does it really update even if a paramter is changed?
+        # if not self.par:  # TODO: test with simulator, does it really update even if a paramter is changed?
+        if not hasattr(self, 'par'):
             self.par = self.default_par
         fn_params = [
             f"fieldM{self.par['M']}",
