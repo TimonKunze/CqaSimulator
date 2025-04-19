@@ -63,7 +63,7 @@ class CqaDefaults:
         fp = fp / f"g{self.par['g']}_kb{self.par['kb']}_step{self.par['initial_step_size']}"
         fp = fp / f"P{self.par['P']}_N{self.par['N']}"
         fp = fp / f"T{self.par['T']}_L{self.par['L']}"
-        fp = fp / f"fieldM{self.par['M']}_corrP{int(self.par['correlated_peaks'])}"
+        fp = fp / f"fieldM{self.par['M']}_corrP{int(self.par['correlated_peaks'])}_gamma{self.par['gamma']}"
         fp = fp / f"heightM{self.par['mean_height']}_heightVar{self.par['mean_height']}"
         fp = fp / f"diaM{self.par['mean_diameter']}_diaVar{self.par['var_diameter']}"
 
@@ -75,7 +75,6 @@ class CqaDefaults:
         if not hasattr(self, 'par'):
             self.par = self.default_par
         fn_params = [
-            f"gamma{self.par['gamma']}",
             # f"corrD{int(self.default_par['correlated_dimensions'])}",
             # f"exp{self.default_par['exponent']}",
             f"seed{self.par['seed']}",
