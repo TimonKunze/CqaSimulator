@@ -54,7 +54,6 @@ class CqaDefaults:
 
     def build_fp(self, base_path):
         """Build folder path from default parameters."""
-        # if not self.par:  # TODO: test with simulator, does it really update even if a paramter is changed?
         if not hasattr(self, 'par'):
             self.par = self.default_par
 
