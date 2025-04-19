@@ -260,36 +260,61 @@ class CqaSimulator(CqaDefaults):
 
         return np.array(history)
 
-    def save_run_data(self, path, parameter_dir=True):
+    def save_run_data(self, path, parameter_dir=True, verbose=True):
         """Save data of a run."""
-        assert self.par["record_final_flag"] is True, "No data recorded."
+        assert self.par["record_final_flag"] is True, "No data was recorded."
 
-        if parameter_dir:
-            fp = self.build_fp(path)
-            print(fp)
-            os.makedirs(fp, exist_ok=True)
-        else:
-            fp = Path(path)
+        path = Path(path)
+        fp = self.build_fp(path) if parameter_dir else path
+        fp.mkdir(parents=True, exist_ok=True)  # pathlib way
 
+        self.data_to_save()
+
+        for fn, data in self.ctx["to_save"].items():
+            np.save(fp / fn, data)
+            if verbose:
+                print(f"[SAVED] {fp / fn}")
+
+    def check_files_exist(self, path, parameter_dir=True, verbose=True):
+        """Check whether each file in ctx['to_save'] exists on disk."""
+        # Check file path
+        path = Path(path)
+        fp = self.build_fp(path) if parameter_dir else path
+        self.data_to_save()
+
+        # Create file status dir
+        file_statuses = {f: (fp / f).exists() for f in self.ctx["to_save"]}
+        if verbose:
+            print(f"[INFO] CHECKING FILE EXIST FOR: {fp.resolve()}")
+            for f, exists in file_statuses.items():
+                status = "FOUND" if exists else "MISSING"
+                print(f"[CHECK] {f}: {status}")
+
+        return file_statuses, fp
+
+    def data_to_save(self):
+        """Determine which files to save."""
         fn = self.build_fn()
-        print(fn)
-        # TODO: test with simulator, does it really update even if a paramter is changed?
 
-        # Save initialization data
-        np.save(fp / f"data_{fn}.npy", self.ctx["data"])
-        np.save(fp / f"diams_per_nrn_{fn}.npy", self.ctx["diams_per_nrn"])
-        np.save(fp / f"heights_per_nrn_{fn}.npy", self.ctx["heights_per_nrn"])
-        np.save(fp / f"fields_per_nrn_{fn}.npy", self.ctx["fields_per_nrn"])
-        # Save simulated data (converged)
-        np.save(fp / f"sim_data_{fn}.npy", self.ctx["sim_data"])
-        np.save(fp / f"sim_pos_{fn}.npy", self.ctx["sim_pos"])
-        # Save evolving data
-        if self.par["track_dynamics_flag"]:
-            np.save(fp / f"overlap_max_{fn}.npy", pad_with_nans(self.ctx["overlap_max"]))
-            np.save(fp / f"overlap_max_pos_{fn}.npy", pad_with_nans(self.ctx["overlap_max_pos"]))
-            np.save(fp / f"overlap_disp_{fn}.npy", pad_with_nans(self.ctx["overlap_disp"]))
-            np.save(fp / f"overlap_disp_clip_{fn}.npy", pad_with_nans(self.ctx["overlap_disp_clip"]))
-            np.save(fp / f"v_disp_{fn}.npy", pad_with_nans(self.ctx["v_disp"]))
+        self.ctx["to_save"] = {
+            # Save initialization data
+            f"data_{fn}.npy": self.ctx["data"],
+            f"diams_per_nrn_{fn}.npy": self.ctx["diams_per_nrn"],
+            f"heights_per_nrn_{fn}.npy": self.ctx["heights_per_nrn"],
+            f"fields_per_nrn_{fn}.npy": self.ctx["fields_per_nrn"],
+            # Save simulated data (converged)
+            f"sim_data_{fn}.npy": self.ctx["sim_data"],
+            f"sim_pos_{fn}.npy": self.ctx["sim_pos"],
+        }
+        # Add dynamic tracking data if enabled
+        if self.par.get("track_dynamics_flag", False):
+            self.ctx["to_save"].update({
+                f"overlap_max_{fn}.npy": pad_with_nans(self.ctx["overlap_max"]),
+                f"overlap_max_pos_{fn}.npy": pad_with_nans(self.ctx["overlap_max_pos"]),
+                f"overlap_disp_{fn}.npy": pad_with_nans(self.ctx["overlap_disp"]),
+                f"overlap_disp_clip_{fn}.npy": pad_with_nans(self.ctx["overlap_disp_clip"]),
+                f"v_disp_{fn}.npy": pad_with_nans(self.ctx["v_disp"]),
+            })
 
     def save_full_model(self, path, parameter_dir=False):
         """Save entire model."""
@@ -327,38 +352,39 @@ if __name__ == '__main__':
 
     # Run and save for multiple positions
     # ===================================
-    # fp = PATHS["runs"]
-    # # var_dias = np.round(np.arange(0.0, 2.0, 0.05), 2).tolist()
-    # var_dias = [0.5]
-    # for i, var_d in enumerate(var_dias):
-    #     print(f"\n Run {i}/{len(var_dias)} with diameter variance {var_d}")
+    fp = "./temp"
+    # var_dias = np.round(np.arange(0.0, 2.0, 0.05), 2).tolist()
+    var_dias = [0.5]
+    for i, var_d in enumerate(var_dias):
+        print(f"\n Run {i}/{len(var_dias)} with diameter variance {var_d}")
 
-    #     cqa = CqaSimulator()
-    #     cqa.par["var_diameter"] = var_d
-    #     cqa.run_until_convergence_over_positions(spacing=1)
-    #     cqa.save_run_data(fp)
-    # cqa.save_full_model(fp)
+        cqa = CqaSimulator()
+        cqa.par["var_diameter"] = var_d
+        cqa.run_until_convergence_over_positions(spacing=500)
+        cqa.save_run_data(fp)
+        cqa.check_files_exist(fp)
+    cqa.save_full_model(fp)
 
-    # Run and visualize for specific position
-    # =======================================
-    cqa = CqaSimulator({
-        "var_diameter": 0.1,
-        "var_heights": 0.1,
-        "N": 3000,
-        "M": 4.4,
-        "correlated_peaks": True,
-        "M_fixed": False,
-        "seed": 1,
-    })
-    # cqa.par["var_diameter"] = 1.3
-    # cqa.par["N"] = 6000
-    # cqa.par["M"] = 4.4
-    # cqa.par["correlated_peaks"] = True
-    # cqa.par["M_fixed"] = False
-    # cqa.update_ctx_state()
-    print(cqa)
-    init_pos = 100
-    cqa.run_until_convergence(
-        init_pos, p=0, record_final_flag=None, verbose=2,
-        visualize=True,
-    )
+    # # Run and visualize for specific position
+    # # =======================================
+    # cqa = CqaSimulator({
+    #     "var_diameter": 0.1,
+    #     "var_heights": 0.1,
+    #     "N": 3000,
+    #     "M": 4.4,
+    #     "correlated_peaks": True,
+    #     "M_fixed": False,
+    #     "seed": 1,
+    # })
+    # # cqa.par["var_diameter"] = 1.3
+    # # cqa.par["N"] = 6000
+    # # cqa.par["M"] = 4.4
+    # # cqa.par["correlated_peaks"] = True
+    # # cqa.par["M_fixed"] = False
+    # # cqa.update_ctx_state()
+    # print(cqa)
+    # init_pos = 100
+    # cqa.run_until_convergence(
+    #     init_pos, p=0, record_final_flag=None, verbose=2,
+    #     visualize=True,
+    # )
