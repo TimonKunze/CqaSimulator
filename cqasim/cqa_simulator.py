@@ -43,7 +43,17 @@ class CqaSimulator(CqaDefaults):
         # Initialize State variables
         # --------------------------
         self.ctx = {}
+        # self.update_ctx_state()
+        self.update_states()
+
+    def update_states(self):
+        """Update model states."""
+        self.update_par_state()
         self.update_ctx_state()
+
+    def update_par_state(self):
+        """Update parameter states."""
+        self.__init__(self.par)  # Reinitialize with new parameters
 
     def update_ctx_state(self):
         """Initialize context states.
@@ -231,8 +241,8 @@ class CqaSimulator(CqaDefaults):
             sampled_pos_indices = np.arange(0, self.par["T"], spacing)
             for init_pos in sampled_pos_indices:
                 if verbose > 1:
-                    print("p =", p, ", init_pos =", init_pos,
-                          " (var_dia =", self.par["var_diameter"], ")")
+                    print(f"p = {p}, init_pos = {init_pos} "
+                          f"(var_diameter = {self.par['var_diameter']})")
 
                 self.run_until_convergence(
                     init_pos, p=0,  # TODO: change p
