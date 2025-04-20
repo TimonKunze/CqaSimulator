@@ -280,12 +280,10 @@ class CqaSimulator(CqaDefaults):
     def check_files_exist(self, path, parameter_dir=True,
                           spacing=None, verbose=True):
         """Check whether each file in ctx['to_save'] exists on disk."""
-        self.ctx["spacing"] = spacing
-
         # Check file path
         path = Path(path)
         fp = self.build_fp(path) if parameter_dir else path
-        self.data_to_save()
+        self.data_to_save(spacing)
 
         # Create file status dir
         file_statuses = {f: (fp / f).exists() for f in self.ctx["to_save"]}
@@ -297,11 +295,11 @@ class CqaSimulator(CqaDefaults):
 
         return file_statuses, fp
 
-    def data_to_save(self):
+    def data_to_save(self, spacing=None):
         """Determine which files to save."""
         fn = self.build_fn()
-        if self.ctx['spacing']:
-            fn += f"_spc{self.ctx['spacing']}"
+        if spacing is not None:
+            fn += f"_spc{spacing}"
 
         self.ctx["to_save"] = {
             # Save initialization data
