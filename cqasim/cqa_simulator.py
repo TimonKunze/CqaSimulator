@@ -46,6 +46,10 @@ class CqaSimulator(CqaDefaults):
         self.update_ctx_state()
     #     self.update_states()
 
+    # TODO: maybe find better update logic without :
+    # cqa.__init__(cqa.par)  # This is important!!
+    # cqa.update_ctx_state()  # This is important!!
+
     # def update_states(self):
     #     """Update model states."""
     #     self.update_par_state()
