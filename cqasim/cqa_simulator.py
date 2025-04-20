@@ -221,6 +221,8 @@ class CqaSimulator(CqaDefaults):
     def run_until_convergence_over_positions(
             self, spacing=20, record_final_flag=None, verbose=2):
         """Run until model converges, for all intialization in data."""
+        self.spacing = spacing
+
         if record_final_flag is not None:
             self.par["record_final_flag"] = record_final_flag
         # Run over all dimensions
@@ -295,6 +297,8 @@ class CqaSimulator(CqaDefaults):
     def data_to_save(self):
         """Determine which files to save."""
         fn = self.build_fn()
+        if self.spacing:
+            fn += f"_{self.spacing}"
 
         self.ctx["to_save"] = {
             # Save initialization data
