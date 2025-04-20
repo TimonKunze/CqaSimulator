@@ -50,6 +50,7 @@ class CqaDefaults:
             "converge_eps": 1e-5,
             "max_iterations": 6e4,
             "verbose": False,
+            "spacing": None,
         }
 
     def build_fp(self, base_path):

@@ -221,7 +221,7 @@ class CqaSimulator(CqaDefaults):
     def run_until_convergence_over_positions(
             self, spacing=20, record_final_flag=None, verbose=2):
         """Run until model converges, for all intialization in data."""
-        self.spacing = spacing
+        self.ctx["spacing"] = spacing
 
         if record_final_flag is not None:
             self.par["record_final_flag"] = record_final_flag
@@ -277,8 +277,11 @@ class CqaSimulator(CqaDefaults):
             if verbose:
                 print(f"[SAVED] {fp / fn}")
 
-    def check_files_exist(self, path, parameter_dir=True, verbose=True):
+    def check_files_exist(self, path, parameter_dir=True,
+                          spacing=None, verbose=True):
         """Check whether each file in ctx['to_save'] exists on disk."""
+        self.ctx["spacing"] = spacing
+
         # Check file path
         path = Path(path)
         fp = self.build_fp(path) if parameter_dir else path
@@ -297,8 +300,8 @@ class CqaSimulator(CqaDefaults):
     def data_to_save(self):
         """Determine which files to save."""
         fn = self.build_fn()
-        if self.spacing:
-            fn += f"_spc{self.spacing}"
+        if self.ctx['spacing']:
+            fn += f"_spc{self.ctx['spacing']}"
 
         self.ctx["to_save"] = {
             # Save initialization data
