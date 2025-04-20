@@ -43,17 +43,17 @@ class CqaSimulator(CqaDefaults):
         # Initialize State variables
         # --------------------------
         self.ctx = {}
-        # self.update_ctx_state()
-        self.update_states()
-
-    def update_states(self):
-        """Update model states."""
-        self.update_par_state()
         self.update_ctx_state()
+    #     self.update_states()
 
-    def update_par_state(self):
-        """Update parameter states."""
-        self.__init__(self.par)  # Reinitialize with new parameters
+    # def update_states(self):
+    #     """Update model states."""
+    #     self.update_par_state()
+    #     self.update_ctx_state()
+
+    # def update_par_state(self):
+    #     """Update parameter states."""
+    #     self.__init__(self.par)  # Reinitialize with new parameters
 
     def update_ctx_state(self):
         """Initialize context states.
