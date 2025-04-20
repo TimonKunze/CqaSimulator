@@ -262,7 +262,7 @@ class CqaSimulator(CqaDefaults):
 
         return np.array(history)
 
-    def save_run_data(self, path, parameter_dir=True, verbose=True):
+    def save_run_data(self, path, spacing=None, parameter_dir=True, verbose=True):
         """Save data of a run."""
         assert self.par["record_final_flag"] is True, "No data was recorded."
 
@@ -270,7 +270,7 @@ class CqaSimulator(CqaDefaults):
         fp = self.build_fp(path) if parameter_dir else path
         fp.mkdir(parents=True, exist_ok=True)  # pathlib way
 
-        self.data_to_save()
+        self.data_to_save(spacing)
 
         for fn, data in self.ctx["to_save"].items():
             np.save(fp / fn, data)
