@@ -298,7 +298,7 @@ class CqaSimulator(CqaDefaults):
         """Determine which files to save."""
         fn = self.build_fn()
         if self.spacing:
-            fn += f"_{self.spacing}"
+            fn += f"_spc{self.spacing}"
 
         self.ctx["to_save"] = {
             # Save initialization data
