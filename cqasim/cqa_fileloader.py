@@ -55,12 +55,9 @@ class CqaFileLoader(CqaDefaults):
         return self._par
 
     def _update_paths(self):
+
+        self.path = self.build_fp(self.paths)
         try:
-            subfolder = "simpl_data" if self.par.get("simplified_data") else "reali_data"
-            self.base_path = self.paths / subfolder
-            self.path = self.base_path / f"g{self.par['g']}_kb{self.par['kb']}_step{self.par['initial_step_size']}" \
-                                         / f"P{self.par['P']}_N{self.par['N']}" \
-                                         / f"T{self.par['T']}_L{self.par['L']}"
             if self.path.exists():
                 self.file_list = [f for f in os.listdir(self.path)
                                   if os.path.isfile(self.path / f)]

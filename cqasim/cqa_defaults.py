@@ -21,7 +21,11 @@ class CqaDefaults:
     """
 
     def __init__(self):
-        """Initialize with default paramters."""
+        """Initialize with default paramters.
+
+        Default parameters are experimental result or the ones chosen
+        by Schönsberg, et al. 2024.
+        """
         self.default_par = {
             # Model parameters
             "P": 1,  # Nb of dimensions
@@ -29,17 +33,17 @@ class CqaDefaults:
             "T": 1000,  # nb places (bins)
             "L": 200,  # sampling of places
             # Data parameters
-            "mean_diameter": 1.570,  # field mean
-            "var_diameter": 2.0,  # field width diameter
-            "correlated_peaks": False,  # Corrs. between field height and diameter
             "simplified_data": False,  # Peaks only vary in width in simplified data
-            "correlated_dimensions": "min",  # only generating data for p > 1
+            "M": 4.4,  # average nb of fields (4.4 in real dt)
+            "M_fixed": True,
+            "correlated_peaks": True,  # Corrs. between field height and diameter
+            "gamma": 0.5,
             "mean_height": 1.549,  # field height
             "var_height": 0.0,
+            "mean_diameter": 1.57,  # field mean
+            "var_diameter": 2.0,  # field width diameter
+            "correlated_dimensions": "min",  # only generating data for p > 1
             "exponent": 0,
-            "gamma": 0.5,
-            "M": 1,  # average nb of fields (4.4 in real dt)
-            "M_fixed": True,
             # Simulation parameters
             "seed": 1,
             "track_dynamics_flag": True,
