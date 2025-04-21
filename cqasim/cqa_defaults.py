@@ -42,7 +42,7 @@ class CqaDefaults:
             "var_height": 0.0,
             "mean_diameter": 1.57,  # field mean
             "var_diameter": 0.0,  # field width diameter
-            "correlated_dimensions": "min",  # only generating data for p > 1
+            "correlated_dimensions": "max",  # only generating data for p > 1
             "exponent": 0,
             # Simulation parameters
             "seed": 1,
