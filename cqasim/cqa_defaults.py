@@ -24,17 +24,17 @@ class CqaDefaults:
         """Initialize with default paramters."""
         self.default_par = {
             # Model parameters
-            "P": 1,
+            "P": 1,  # Nb of dimensions
             "N": 999,  # Neurons
-            "T": 1000,  # nb places
+            "T": 1000,  # nb places (bins)
             "L": 200,  # sampling of places
             # Data parameters
-            "mean_diameter": 1.57,  # field mean
+            "mean_diameter": 1.570,  # field mean
             "var_diameter": 2.0,  # field width diameter
             "correlated_peaks": False,  # Corrs. between field height and diameter
-            "simplified_data": True,
+            "simplified_data": False,  # Peaks only vary in width in simplified data
             "correlated_dimensions": "min",  # only generating data for p > 1
-            "mean_height": 1.549,
+            "mean_height": 1.549,  # field height
             "var_height": 0.0,
             "exponent": 0,
             "gamma": 0.5,
@@ -42,10 +42,10 @@ class CqaDefaults:
             "M_fixed": True,
             # Simulation parameters
             "seed": 1,
-            "track_dynamics_flag": False,
+            "track_dynamics_flag": True,
             "record_final_flag": True,
             "g": 17.0,
-            "kb": 300,  # omega / sigma / strenght of inh. feedback
+            "kb": 300,  # omega / sigma / strenght of inh. feedback /threshold constant
             "initial_step_size": 0.08,
             "converge_eps": 1e-5,
             "max_iterations": 6e4,
@@ -78,6 +78,8 @@ class CqaDefaults:
         fn_params = [
             # f"corrD{int(self.default_par['correlated_dimensions'])}",
             # f"exp{self.default_par['exponent']}",
+            # f"eps{self.default_par['converge_eps']}",
+            # f"maxIt{self.default_par['max_iterations']}",
             f"seed{self.par['seed']}",
         ]
         fn = "_".join(fn_params)
