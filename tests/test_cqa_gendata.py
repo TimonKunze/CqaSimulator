@@ -2,7 +2,7 @@
 import pytest
 import numpy as np
 
-from src.cqa_gendata import gen_simplified_data, \
+from cqasim.cqa_gendata import gen_simplified_data, \
     draw_diameters, gaussian_1d, gen_p_data
 
 

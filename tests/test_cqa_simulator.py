@@ -5,7 +5,7 @@ import tempfile
 # from unittest.mock import patch
 from pathlib import Path
 
-from src.cqa_simulator import CqaSimulator
+from cqasim.cqa_simulator import CqaSimulator
 
 
 @pytest.fixture

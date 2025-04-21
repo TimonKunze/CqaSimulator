@@ -4,7 +4,8 @@ import tempfile
 import shutil
 import numpy as np
 from pathlib import Path
-from src.cqa_fileloader import CqaFileLoader, ObservableDict
+
+from cqasim.cqa_fileloader import CqaFileLoader, ObservableDict
 
 
 @pytest.fixture
