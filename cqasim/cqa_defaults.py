@@ -65,7 +65,7 @@ class CqaDefaults:
         fp = fp / f"T{self.par['T']}_L{self.par['L']}"
         fp = fp / f"fieldM{self.par['M']}_fixedM{self.par['M_fixed']}"
         fp = fp / f"corrP{int(self.par['correlated_peaks'])}_gamma{self.par['gamma']}"
-        fp = fp / f"heightM{self.par['mean_height']}_heightVar{self.par['mean_height']}"
+        fp = fp / f"heightM{self.par['mean_height']}_heightVar{self.par['var_diameter']}"
         fp = fp / f"diaM{self.par['mean_diameter']}_diaVar{self.par['var_diameter']}"
 
         return fp
