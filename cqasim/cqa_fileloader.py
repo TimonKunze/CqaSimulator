@@ -66,7 +66,7 @@ class CqaFileLoader(CqaDefaults):
             if self.path.exists():
                 self.file_list = [f for f in os.listdir(self.path)
                                   if os.path.isfile(self.path / f)]
-                self.name_list = [f.split("fieldM")[0][:-1]  # fieldM is 1. param
+                self.name_list = [f.split("seed")[0][:-1]  # fieldM is 1. param
                                   for f in self.file_list]
                 # Load data
                 self.files = {name: np.load(self.path / f) for name, f
