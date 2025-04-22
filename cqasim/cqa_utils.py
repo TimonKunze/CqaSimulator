@@ -28,9 +28,9 @@ def pad_with_nans(nested_list):
     convert to a numpy array.
     """
     # Determine maximum length of inner lists
-    max_length = max(len(sublist) for sublist in nested_list)
-    padded_list = [sublist + [np.nan]
-                   * (max_length - len(sublist)) for sublist in nested_list]
+    max_length = max(len(sub) for sub in nested_list)
+    padded_list = [list(sub) + [np.nan]
+                   * (max_length - len(sub)) for sub in nested_list]
 
     return np.array(padded_list)
 

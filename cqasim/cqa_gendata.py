@@ -21,9 +21,9 @@ def gen_p_data(P, N, T, L, M,
 
     # Initialize data
     dt = np.zeros((P, N, T))
-    diams_per_nrn = [] #np.zeros((P, N))
-    heights_per_nrn = [] # np.zeros((P, N))
-    fields_per_nrn = [] # np.zeros((P, N))
+    diams_per_nrn = []
+    heights_per_nrn = []
+    fields_per_nrn = []
 
     for p in range(P):
         # Generate simplified data (i.e. only variation in peak width)
@@ -193,11 +193,20 @@ def gen_realistic_data2(  # TODO: write unit tests!
             radius = diametri[j] / 2.0
             dati[i, :] += broken_gaussian_1d(x_general, centro, altezza, radius, L)
 
+    # print(np.shape(diams_per_nrn))
+    # print(np.shape(heights_per_nrn))
+    # print(np.shape(fields_per_nrn))
+    print(len(diams_per_nrn), "items")
+    print("Example entry shapes:", [len(d) if hasattr(d, '__len__') else type(d) for d in diams_per_nrn[:5]])
+    print(len(fields_per_nrn), "items")
+    print("Example entry shapes:", [len(d) if hasattr(d, '__len__') else type(d) for d in fields_per_nrn[:5]])
+
     diams_per_nrn = pad_with_nans(diams_per_nrn)
     heights_per_nrn = pad_with_nans(heights_per_nrn)
     fields_per_nrn = pad_with_nans(fields_per_nrn)
 
     return dati, diams_per_nrn, heights_per_nrn, fields_per_nrn
+
 
 # Tested
 def gen_simplified_data(

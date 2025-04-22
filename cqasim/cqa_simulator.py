@@ -374,17 +374,17 @@ if __name__ == '__main__':
     # Run and save for multiple positions
     # ===================================
     fp = "./temp"
-    # var_dias = np.round(np.arange(0.0, 2.0, 0.05), 2).tolist()
-    var_dias = [0.5]
-    for i, var_d in enumerate(var_dias):
-        print(f"\n Run {i}/{len(var_dias)} with diameter variance {var_d}")
+    # # var_dias = np.round(np.arange(0.0, 2.0, 0.05), 2).tolist()
+    # var_dias = [0.5]
+    # for i, var_d in enumerate(var_dias):
+    #     print(f"\n Run {i}/{len(var_dias)} with diameter variance {var_d}")
 
-        cqa = CqaSimulator()
-        cqa.par["var_diameter"] = var_d
-        cqa.run_until_convergence_over_positions(spacing=500)
-        cqa.save_run_data(fp)
-        cqa.check_files_exist(fp)
-    cqa.save_full_model(fp)
+    #     cqa = CqaSimulator()
+    #     cqa.par["var_diameter"] = var_d
+    #     cqa.run_until_convergence_over_positions(spacing=500)
+    #     cqa.save_run_data(fp)
+    #     cqa.check_files_exist(fp)
+    # cqa.save_full_model(fp)
 
     # # Run and visualize for specific position
     # # =======================================
@@ -409,3 +409,24 @@ if __name__ == '__main__':
     #     init_pos, p=0, record_final_flag=None, verbose=2,
     #     visualize=True,
     # )
+
+    cqa = CqaSimulator() # FIXME: error for this in pad_with_nans!
+    cqa.par["simplified_data"] = False
+    cqa.par["track_dynamics_flag"] = True
+    cqa.par["correlated_dimensions"] = "max"
+    cqa.par["N"] = 1000
+    cqa.par["T"] = 1000
+
+    cqa.par["M"] = 4.4
+    cqa.par["M_fixed"] = False
+    cqa.par["correlated_peaks"] = False
+
+    cqa.par["mean_height"] = 1.549
+    cqa.par["var_height"] = 0.8
+
+    cqa.par["mean_diameter"] = 1.57
+    cqa.par["var_diameter"] = 0.6
+
+    cqa.__init__(par=cqa.par)  # This is important!!
+    cqa.update_ctx_state()  # This is important!!
+    # cqa.update_states()
