@@ -246,7 +246,9 @@ class CqaSimulator(CqaDefaults):
             for init_pos in sampled_pos_indices:
                 if verbose > 1:
                     print(f"p = {p}, init_pos = {init_pos} "
-                          f"(var_diameter = {self.par['var_diameter']})")
+                          f"(M={self.par['M']}, "
+                          f"var_height={self.par['var_height']}, "
+                          f"var_dia={self.par['var_diameter']})")
 
                 self.run_until_convergence(
                     init_pos, p=0,  # TODO: change p
