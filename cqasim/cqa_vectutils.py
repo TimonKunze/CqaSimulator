@@ -38,7 +38,7 @@ def one_step_dynamics(general_mean, Vc, J, g, kb):
     kb: omega / sigma / 300 / strength of inhibitory feedback
     """
     # Compute the input currents h
-    Vc = np.ascontiguousarray(Vc)
+    Vc = np.ascontiguousarray(Vc)  # Ensure contiguous array to ensure fast numba computationan and solve warning.
     h = np.dot(J, Vc)
     # Apply cubic transformation using desired general mean and scale by kb
     Th = b_function(np.mean(Vc), general_mean, kb)

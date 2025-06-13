@@ -263,7 +263,8 @@ class CqaSimulator(CqaDefaults):
                     record_final_flag=self.par["record_final_flag"],
                     verbose=verbose)
 
-    def save_run_data(self, path, spacing=None, parameter_dir=True, verbose=True):
+    def save_run_data(
+            self, path, spacing=None, parameter_dir=True, verbose=True):
         """Save data of a run."""
         assert self.par["record_final_flag"] is True, "No data was recorded."
 
@@ -284,7 +285,7 @@ class CqaSimulator(CqaDefaults):
             if verbose:
                 print(f"[SAVED] {fp / fn}")
 
-    def load_run_data(self, path): # TODO: finish
+    def load_run_data(self, path):  # TODO: finish
         self.check_files_exist(path)
             # # Load them back
             # loaded = np.load("arrays.npz")
@@ -325,7 +326,7 @@ class CqaSimulator(CqaDefaults):
             f"sim_pos_{fn}.npy": self.ctx["sim_pos"],
         }
         # Add dynamic tracking data if enabled
-        if self.par.get("track_quantified_dynamics", False):
+        if self.par["track_quantified_dynamics"]:
             self.ctx["to_save"].update({
                 f"overlap_max_{fn}.npy": pad_with_nans(self.ctx["overlap_max"]),
                 f"overlap_max_pos_{fn}.npy": pad_with_nans(self.ctx["overlap_max_pos"]),
@@ -333,9 +334,9 @@ class CqaSimulator(CqaDefaults):
                 f"overlap_disp_clip_{fn}.npy": pad_with_nans(self.ctx["overlap_disp_clip"]),
                 f"v_disp_{fn}.npy": pad_with_nans(self.ctx["v_disp"]),
             })
-        if self.par.get("track_full_dynamics", False):
-            vdyn_arr_lst = [np.array(pos) for pos in self.ctx["V_dynamics"]]
-            self.ctx["to_save"].update({f"v_dynamics_{fn}.npz": vdyn_arr_lst})
+        if self.par["track_full_dynamics"]:
+            v_dyn_arr_lst = [np.array(pos) for pos in self.ctx["V_dynamics"]]
+            self.ctx["to_save"].update({f"v_dynamics_{fn}.npz": v_dyn_arr_lst})
 
     def save_full_model(self, path, parameter_dir=False):
         """Save entire model."""
