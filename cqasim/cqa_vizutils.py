@@ -3,6 +3,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+from cqasim.cqa_vectutils import calc_hessian, calc_sparsity, \
+    calc_support, cosine_similarity, one_step_dynamics, relu, \
+    cosine_similarity_vec, std_cdm
+
 
 def animate_1d_activity(V_data, o_data, data, ymin=-1, ymax=1, pause=0.2):
     """Animate 1D data over time steps."""
@@ -10,6 +14,10 @@ def animate_1d_activity(V_data, o_data, data, ymin=-1, ymax=1, pause=0.2):
         f"Data is not 2D but of shape {np.shape(V_data)}."
 
     o_max_dt = [[np.argmax(o_curr), np.max(o_curr)] for o_curr in o_data]
+
+    o_disp_dt = [std_cdm(o_curr) for o_curr in o_data]
+    o_disp_clip_dt = [std_cdm(np.maximum(o_curr - 0.2, 0)) for o_curr in o_data] # Love from Ani
+
     x_0 = np.arange(len(o_data[1]))
     x_1 = np.arange(len(V_data[1]))
 
@@ -28,6 +36,22 @@ def animate_1d_activity(V_data, o_data, data, ymin=-1, ymax=1, pause=0.2):
     axs[0].set_ylabel("Overlap")
     axs[1].set_ylabel("Activation")
 
+    text_disp = axs[0].text(
+        0.95, 0.95,                 # X, Y in axes coordinates (0 to 1)
+        # np.round(o_disp_dt[0], 3),
+        f"Disp={o_disp_dt[0]:.2f}",           # The text
+        transform=axs[0].transAxes,     # Use axes coords, not data coords
+        ha="right", va="top",       # Align text to the top-right corner
+        fontsize=12, bbox=dict(facecolor='white', alpha=0.7, edgecolor='none')  # Optional styling
+    )
+    text_disp_clip = axs[0].text(
+        0.95, 0.85,                 # X, Y in axes coordinates (0 to 1)
+        f"DispC={o_disp_clip_dt[0]:.2f}",           # The text
+        transform=axs[0].transAxes,     # Use axes coords, not data coords
+        ha="right", va="top",       # Align text to the top-right corner
+        fontsize=12, bbox=dict(facecolor='white', alpha=0.7, edgecolor='none')  # Optional styling
+    )
+
     fig.tight_layout()
 
     i = 0
@@ -36,6 +60,8 @@ def animate_1d_activity(V_data, o_data, data, ymin=-1, ymax=1, pause=0.2):
         line_0.set_data(x_0, o_data[i])
         point_0.set_offsets(o_max_dt[i])
         line_1.set_data(x_1, V_data[i])
+        text_disp.set_text(f"Disp={o_disp_dt[0]:.2f}")
+        text_disp_clip.set_text(f"DispC={o_disp_clip_dt[0]:.2f}")
         fig.suptitle(f"Timestep: {i}/{len(V_data)}")
         plt.pause(pause)  # Pause to visualize
 

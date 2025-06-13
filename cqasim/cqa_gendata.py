@@ -6,7 +6,7 @@ from cqasim.cqa_utils import pad_with_nans
 from cqasim.cqa_vectutils import broken_gaussian_1d, gaussian_1d
 
 
-def gen_p_data(P, N, T, L, M,
+def gen_p_data(P, N, T, L, Zeta,
                diametro_m, diametro_delta,
                height_m, height_delta,
                correlated_peaks,
@@ -67,11 +67,11 @@ def gen_p_data(P, N, T, L, M,
 
             # Generate realistic data
             dt[p], diams, heights, fields = gen_realistic_data2(
-                N, M, T, L,
+                N, Zeta, T, L,
                 diametro_m, diametro_delta,
                 height_m, height_delta,
                 correlated_peaks, gamma,
-                M_fissato=M_fixed,
+                M_fixed=M_fixed,
                 verbose=verbose,
                 seed=seed
             )
@@ -87,21 +87,38 @@ def gen_p_data(P, N, T, L, M,
 
 
 def gen_realistic_data2(  # TODO: write unit tests!
-    N, M, T, L,
-    diametro_m, diametro_delta,
-    altezza_m, altezza_delta,
-    correlazione,
-    gamma,
-    M_fissato=True,  # Default value: True (fixed number of fields)
-    verbose=1,
-    seed=4,
-):
+    N: int, Zeta: float, T: int, L: float,
+    diametro_m: float, diametro_delta: float,
+    altezza_m: float, altezza_delta: float,
+    correlazione: bool,
+    gamma: float,
+    M_fixed: int = None,
+    verbose: int = 1,
+    seed: int = 4,
+) -> np.ndarray:
     """Generate synthetic neural activity data based on place cell statistics.
+
+    Parameters:
+    - N: Number of neurons
+    - Zeta: Exponential distribution parameter for number of fields
+    - T: Number of time steps
+    - L: Length of the environment
+    - diametro_m, diametro_delta: Mean and standard deviation for field diameters
+    - altezza_m, altezza_delta: Mean and standard deviation for peak heights
+    - correlazione: Whether there’s a correlation in peak heights ('no' or other)
+    - gamma: Correlation strength for peak heights
+    - M_fixed: Fixed number of fields per neuron (optional)
+    - verbose: Verbosity level
+    - seed: Random seed for reproducibility
+
+    Returns:
+    - dati: Neural activity data
+    - diams_per_nrn, heights_per_nrn, fields_per_nrn: Properties of place fields for each neuron
     """
     if seed is not None:
         np.random.seed(seed)
 
-    # Initialize arrays and lists
+    # Initialize general grid and data
     x_general = np.linspace(0, L, T, endpoint=False)
     dati = np.zeros((N, T))
 
@@ -110,26 +127,24 @@ def gen_realistic_data2(  # TODO: write unit tests!
     fields_per_nrn = []  # position of place fields
     # nb_fields_per_nrn = []
 
-    if M_fissato or M_fissato == "yes":
-        M = int(M)
-
-    # Loop over number of neurons N
+    # Loop over each neuron
     for i in range(N):
         # Determine the number of fields per neuron
-        if M_fissato or M_fissato == "yes":
-            nb_fields = M
+        if M_fixed is not None:
+            nb_fields = M_fixed
         else:
-            nb_fields = int(np.random.exponential(M))
+            nb_fields = int(np.random.exponential(Zeta))
 
-        # Ensure valid number of fields
-        while nb_fields == 0 or nb_fields > 21:
-            nb_fields = int(np.random.exponential(M))
+            # Ensure valid number of fields
+            while nb_fields == 0 or nb_fields > 21:
+                nb_fields = int(np.random.exponential(Zeta))
 
         # Draw field diameters
         diametri = draw_diameters(diametro_m, diametro_delta, nb_fields, L)
 
         if verbose > 0:
-            print(f"n={i}, Total Diameters: {np.sum(diametri)}, nb_fieldss={nb_fields}")
+            print(f"n={i}, Total Diameters: {np.sum(diametri)}, "
+                  f" nb_fields={nb_fields}")
 
         # Draw peak heights based on correlation
         if not correlazione or correlazione == "no":
@@ -140,7 +155,8 @@ def gen_realistic_data2(  # TODO: write unit tests!
                 # NOTE: FS uses unnecessary while loop here qith q==0
                 # NOTE: FS has an if condition here testing whether 0<2*expis which
                 # is trivially true, therefore removed
-                specific_mean = altezza_m + gamma * np.log(d / np.exp(diametro_m + diametro_delta**2 / 2.0))
+                specific_mean = altezza_m + gamma * \
+                    np.log(d / np.exp(diametro_m + diametro_delta**2 / 2.0))
                 # Draw peak firing rate from log normal
                 q = np.random.lognormal(specific_mean, altezza_delta,)
                 # Modify peak firing rate to prevent peak firing rate higher
@@ -196,10 +212,10 @@ def gen_realistic_data2(  # TODO: write unit tests!
     # print(np.shape(diams_per_nrn))
     # print(np.shape(heights_per_nrn))
     # print(np.shape(fields_per_nrn))
-    print(len(diams_per_nrn), "items")
-    print("Example entry shapes:", [len(d) if hasattr(d, '__len__') else type(d) for d in diams_per_nrn[:5]])
-    print(len(fields_per_nrn), "items")
-    print("Example entry shapes:", [len(d) if hasattr(d, '__len__') else type(d) for d in fields_per_nrn[:5]])
+    # print(len(diams_per_nrn), "items")
+    # print("Example entry shapes:", [len(d) if hasattr(d, '__len__') else type(d) for d in diams_per_nrn[:5]])
+    # print(len(fields_per_nrn), "items")
+    # print("Example entry shapes:", [len(d) if hasattr(d, '__len__') else type(d) for d in fields_per_nrn[:5]])
 
     diams_per_nrn = pad_with_nans(diams_per_nrn)
     heights_per_nrn = pad_with_nans(heights_per_nrn)

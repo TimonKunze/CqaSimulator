@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import pytest
+
 from pathlib import Path
 from cqasim.cqa_defaults import CqaDefaults
 
@@ -30,18 +31,18 @@ def test_initialization(defaults_obj):
 def test_build_fp(defaults_obj):
     """Test folder path construction from parameters."""
     base = Path("/base/path")
+
     result = defaults_obj.build_fp(base)
 
     fp = base / "reali_data"
     fp = fp / f"g{17.0}_kb{300}_step{0.08}"
     fp = fp / f"P{1}_N{999}"
     fp = fp / f"T{1000}_L{200}"
-    fp = fp / f"fieldM{4.4}_fixedM{True}"
+    fp = fp / f"zetaM{4.4}_fixedM{None}"
     fp = fp / f"corrP{1}_gamma{0.5}"
     fp = fp / f"heightM{1.549}_heightVar{0.0}"
     fp = fp / f"diaM{1.57}_diaVar{0.0}"
     expected = fp
-    print
 
     assert result == expected
 

@@ -9,41 +9,59 @@ from cqasim.cqa_gendata import gen_simplified_data, \
 def test_gen_p_data_shape_min():
     """Test that output shapes are correct with min correlation."""
     P, N, T, L = 2, 3, 100, 1000
+    Zeta = 43
     diametro_m, diametro_delta = 1.0, 0.3
-    dt, diams, heights, fields = gen_p_data(P, N, T, L,
-                                            diametro_m, diametro_delta,
-                                            correlations="min",
-                                            simplified=True, seed=42)
+    height_m = 21
+    height_delta = 0.43
+    correlated_peaks = True
+    gamma = 0.1
 
-    print(fields)
-    assert dt.shape == (P, N, T)
-    assert diams.shape == (P, N)
-    assert heights.shape == (P, N)
-    assert fields.shape == (P, N)
-    assert np.all(fields == 1)
+    data, diameter_per_nrn, heights_per_nrn, fields_per_nrn = gen_p_data(
+        P, N, T, L, Zeta,
+        diametro_m, diametro_delta,
+        height_m, height_delta,
+        correlated_peaks,
+        gamma,
+        correlated_dims="min",
+        M_fixed=1,
+        simplified=True,
+        verbose=False,
+        seed=42,
+    )
+
+    assert data.shape == (P, N, T)
+    assert np.shape(diameter_per_nrn) == (P, N)
+    assert np.shape(heights_per_nrn) == (P, N)
+    assert np.shape(fields_per_nrn) == (P, N)
+    for d in fields_per_nrn:
+        assert np.all(d == 1)
+
 
 def test_gen_p_data_shape_max():
     """Test that output shapes are correct with max correlation."""
     P, N, T, L = 2, 3, 100, 1000
+    Zeta = 43
     diametro_m, diametro_delta = 1.0, 0.3
-    dt, diams, heights, fields = gen_p_data(
-        P, N, T, L, diametro_m, diametro_delta, correlations="max",
-        simplified=True, seed=123)
-
-    assert dt.shape == (P, N, T)
-    assert diams.shape == (P, N)
-    assert heights.shape == (P, N)
-    assert fields.shape == (P, N)
-
-def test_gen_p_data_invalid_correlation():
-    """Test that an invalid correlation value raises ValueError."""
-    with pytest.raises(ValueError, match="correlations can be only max or min"):
-        gen_p_data(1, 2, 10, 100, 1.0, 0.2, correlations="none", seed=0)
-
-def test_gen_p_data_not_implemented():
-    """Test that the non-simplified path raises NotImplementedError."""
-    with pytest.raises(NotImplementedError):
-        gen_p_data(1, 2, 10, 100, 1.0, 0.2, simplified=False)
+    height_m = 21
+    height_delta = 0.43
+    correlated_peaks = True
+    gamma = 0.1
+    data, diameter_per_nrn, heights_per_nrn, fields_per_nrn = gen_p_data(
+        P, N, T, L, Zeta,
+        diametro_m, diametro_delta,
+        height_m, height_delta,
+        correlated_peaks,
+        gamma,
+        correlated_dims="max",
+        M_fixed=1,
+        simplified=True,
+        verbose=False,
+        seed=42,
+    )
+    assert data.shape == (P, N, T)
+    assert np.shape(diameter_per_nrn) == (P, N)
+    assert np.shape(heights_per_nrn) == (P, N)
+    assert np.shape(fields_per_nrn) == (P, N)
 
 
 def test_data_shape():

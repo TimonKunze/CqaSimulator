@@ -34,8 +34,8 @@ class CqaDefaults:
             "L": 200,  # sampling of places
             # Data parameters
             "simplified_data": False,  # Peaks only vary in width in simplified data
-            "M": 4.4,  # average nb of fields (4.4 in real dt)
-            "M_fixed": True,
+            "Zeta": 4.4,  # average nb of fields (4.4 in real dt)
+            "M_fixed": None,  # if M_fixed not None, Zeta is not used
             "correlated_peaks": True,  # Corrs. between field height and diameter
             "gamma": 0.5,
             "mean_height": 1.549,  # field height
@@ -46,14 +46,16 @@ class CqaDefaults:
             "exponent": 0,
             # Simulation parameters
             "seed": 1,
-            "track_dynamics_flag": True,
-            "record_final_flag": True,
             "g": 17.0,
             "kb": 300,  # omega / sigma / strenght of inh. feedback /threshold constant
             "initial_step_size": 0.08,
             "converge_eps": 1e-5,
             "max_iterations": 6e4,
             "verbose": False,
+            # Data saving flags
+            "track_quantified_dynamics": False,
+            "track_full_dynamics": False,
+            "record_final_flag": True,
             # "spacing": None,  # Spacing of different initialization on T dimension for which the model is run
         }
 
@@ -67,7 +69,7 @@ class CqaDefaults:
         fp = fp / f"g{self.par['g']}_kb{self.par['kb']}_step{self.par['initial_step_size']}"
         fp = fp / f"P{self.par['P']}_N{self.par['N']}"
         fp = fp / f"T{self.par['T']}_L{self.par['L']}"
-        fp = fp / f"fieldM{self.par['M']}_fixedM{self.par['M_fixed']}"
+        fp = fp / f"zetaM{self.par['Zeta']}_fixedM{self.par['M_fixed']}"
         fp = fp / f"corrP{int(self.par['correlated_peaks'])}_gamma{self.par['gamma']}"
         fp = fp / f"heightM{self.par['mean_height']}_heightVar{self.par['var_height']}"
         fp = fp / f"diaM{self.par['mean_diameter']}_diaVar{self.par['var_diameter']}"
@@ -96,3 +98,12 @@ class CqaDefaults:
     def __repr__(self):
         """Return a detailed string representation of the CqaModel."""
         return (f"CqaModel(par={self.default_par})")
+
+
+if __name__ == '__main__':
+    pass
+    # cqa_def = CqaDefaults()
+    # cqa_def.build_fp("")
+    # print(cqa_def.build_fp(""))
+    # fp = cqa_def.build_fp("base/path")
+    # print(fp)

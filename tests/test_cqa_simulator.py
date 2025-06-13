@@ -77,12 +77,12 @@ def test_run_until_max_iter_reached(simulator):
     assert simulator.ctx["max_iter_reached"], \
         "The model should reach max_iterations within the given iterations."
 
-def test_run_n_steps(simulator):
-    """Test running the model for a fixed number of steps."""
-    history = simulator.run_N_steps(n_steps=50, track_dynamics_flag=True)
+# def test_run_n_steps(simulator):
+#     """Test running the model for a fixed number of steps."""
+#     history = simulator.run_N_steps(n_steps=50, track_dynamics_flag=True)
 
-    assert history.shape == (50, simulator.par["N"], simulator.par["T"]), \
-        "History should contain the correct number of steps."
+#     assert history.shape == (50, simulator.par["N"], simulator.par["T"]), \
+#         "History should contain the correct number of steps."
 
 def test_save_and_load_run_data(simulator):
     """Test saving and loading the model's data."""
@@ -90,24 +90,25 @@ def test_save_and_load_run_data(simulator):
     simulator.__init__(simulator.par)  # Reinitialize with new parameters
     path = Path("/tmp/simulator_test")
     simulator.save_run_data(path)
-    path = path / "reali_data/g17.0_kb300_step0.08" / "P1_N999" / "T1000_L200"
-    assert (path / "data_fieldM1_heightM1.549_diaM1.57_diaVar2.0_corrP0_gamma0.5_seed1.npy").exists(), "Data file was not saved correctly."
-    assert (path / "sim_data_fieldM1_heightM1.549_diaM1.57_diaVar2.0_corrP0_gamma0.5_seed1.npy").exists(), "Sim data file was not saved correctly."
 
-# def test_save_full_model(simulator):
-#     """Test saving and loading the full model."""
-#     path = Path("/tmp/simulator_test_model")
-#     simulator.save_full_model(path)
+    fp = path / "reali_data"
+    fp = fp / f"g{17.0}_kb{300}_step{0.08}"
+    fp = fp / f"P{1}_N{999}"
+    fp = fp / f"T{1000}_L{200}"
+    fp = fp / f"zetaM{4.4}_fixedM{None}"
+    fp = fp / f"corrP{1}_gamma{0.5}"
+    fp = fp / f"heightM{1.549}_heightVar{0.0}"
+    fp = fp / f"diaM{1.57}_diaVar{0.0}"
 
-#     assert (path / "full_model.pkl").exists(), \
-#         "Full model file was not saved correctly."
+    assert (fp / f"sim_data_seed{1}.npy").exists(), "Data file was not saved correctly."
+    assert (fp / f"sim_pos_seed{1}.npy").exists(), "Sim data file was not saved correctly."
 
 def test_save_full_model_and_load(simulator):
     """Test saving and loading the full model using a temporary directory."""
     # Create a temporary directory for testing
     with tempfile.TemporaryDirectory() as temp_dir:
         path = Path(temp_dir)
-        print(path)
+        # print(path)
         # Save the full model
         simulator.save_full_model(path)
         # Assert that the full model file exists

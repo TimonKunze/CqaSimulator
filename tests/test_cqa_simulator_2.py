@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-
-#!/usr/bin/env python3
 import pytest
 import numpy as np
 import tempfile
@@ -71,8 +69,8 @@ def test_save_and_load_run_data(simulator):
             "var_height": 0.0,
             "exponent": 0,
             "gamma": 0.5,
-            "M": 1,  # average nb of fields (4.4 in real dt)
-            "M_fixed": True,
+            "Zeta": 4.3,  # average nb of fields (4.4 in real dt)
+            "M_fixed": 4,
             # Simulation parameters
             "seed": 1,
             "track_dynamics_flag": True,
@@ -93,16 +91,12 @@ def test_save_and_load_run_data(simulator):
     fp = fp / f"g{dpar['g']}_kb{dpar['kb']}_step{dpar['initial_step_size']}"
     fp = fp / f"P{dpar['P']}_N{dpar['N']}"
     fp = fp / f"T{dpar['T']}_L{dpar['L']}"
+    fp = fp / f"zetaM{dpar['Zeta']}_fixedM{dpar['M_fixed']}"
+    fp = fp / f"corrP{int(dpar['correlated_peaks'])}_gamma{dpar['gamma']}"
+    fp = fp / f"heightM{dpar['mean_height']}_heightVar{dpar['var_height']}"
+    fp = fp / f"diaM{dpar['mean_diameter']}_diaVar{dpar['var_diameter']}"
 
     fn_params = [
-        f"fieldM{dpar['M']}",
-        f"heightM{dpar['mean_height']}",
-        f"diaM{dpar['mean_diameter']}",
-        f"diaVar{dpar['var_diameter']}",
-        f"corrP{int(dpar['correlated_peaks'])}",
-        f"gamma{dpar['gamma']}",
-        # f"corrD{int(self.dpar['correlated_dimensions'])}",
-        # f"exp{self.dpar['exponent']}",
         f"seed{dpar['seed']}",
     ]
     fn = "_".join(fn_params)
