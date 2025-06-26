@@ -118,8 +118,8 @@ class CqaSimulator(CqaDefaults):
             self.ctx["overlap_disp"] = copy.deepcopy(lst_init)
             self.ctx["overlap_disp_clip"] = copy.deepcopy(lst_init)
             self.ctx["v_disp"] = copy.deepcopy(lst_init)
-        if self.par["track_full_dynamics"]:
-            self.ctx["V_dynamics"] = copy.deepcopy(lst_init)
+        # if self.par["track_full_dynamics"]:
+        self.ctx["V_dynamics"] = copy.deepcopy(lst_init)
 
     def execute_step(self, verbose=0):
         """Perform one update step using Euler integration."""
@@ -388,8 +388,12 @@ if __name__ == '__main__':
         cqa = CqaSimulator(par={
             "var_diameter": var_d,
             "track_full_dynamics": True,
-            "track_quantified_dynamics": True,
+            "track_quantified_dynamics": False,
+            "record_final_flag": True,
         })
+
+        files_exist, _ = cqa.check_files_exist(fp, spacing=500)
+
         cqa.run_until_convergence_over_positions(spacing=500)
         cqa.save_run_data(fp)
         cqa.check_files_exist(fp)
