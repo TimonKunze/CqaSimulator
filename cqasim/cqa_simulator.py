@@ -286,8 +286,15 @@ class CqaSimulator(CqaDefaults):
             if verbose:
                 print(f"[SAVED] {fp / fn}")
 
-    def load_run_data(self, path):  # TODO: finish
-        self.check_files_exist(path)
+    def load_run_data(self, path, parameter_dir=True):
+        """Load data of a full run."""
+        if self.check_files_exist(path):
+            fp = self.build_fp(path) if parameter_dir else path
+            fn = self.build_fn(path)
+
+            data = np.load(fp / fn)  # TODO: finish
+
+
             # # Load them back
             # loaded = np.load("arrays.npz")
             # arr_list_loaded = [loaded[f"arr_{i}"] for i in range(len(loaded.files))]
