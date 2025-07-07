@@ -1,3 +1,4 @@
+"""Generate data for CQA model."""
 #!/usr/bin/env python3
 import numpy as np
 from itertools import combinations
@@ -52,19 +53,6 @@ def gen_p_data(P, N, T, L, Zeta,
         # Realistic data (i.e. variation in peak width, height, and number)
         # ================================================================
         else:
-            if correlated_dims == "max":
-                if seed is None:
-                    seed = 1
-                if verbose:
-                    print("NOTE: Data is necessarily seeded for correlated_dims=='max'.")
-            elif correlated_dims == "random":
-                if verbose:
-                    print("NOTE: Data is not seeded because correlated_dims=='random'.")
-                seed = None
-            else:
-                # Raise error for unsupported correlation mode
-                raise ValueError("As of now, correlations can only be 'max' or 'random' for realistic data.")
-
             # Generate realistic data
             dt[p], diams, heights, fields = gen_realistic_data2(
                 N, Zeta, T, L,
