@@ -35,31 +35,37 @@ def pad_with_nans(nested_list):
     return np.array(padded_list)
 
 
-def pad_with_nans_3d(nested_list):
-    """
-    Pads a 3D list of shape [P][N][T] so that all [N][T] entries have the same shape.
-    """
-    if not nested_list:
+def pad_with_nans_3d_b(nested_list):
+    import numpy as np
+
+    if not nested_list or not any(len(outer) > 0 for outer in nested_list):
+        return np.array([])
+
+    all_inner_lengths = [
+        len(inner)
+        for outer in nested_list
+        for inner in outer
+        if isinstance(inner, (list, np.ndarray)) and len(inner) > 0
+    ]
+
+    if not all_inner_lengths:
         return np.array([])
 
     max_n = max(len(outer) for outer in nested_list)
-    max_t = max(
-        len(inner) for outer in nested_list for inner in outer if inner
-    )
+    max_t = max(all_inner_lengths)
 
     padded = []
     for outer in nested_list:
         padded_outer = []
         for inner in outer:
-            # Pad each inner list to max_t
             padded_inner = list(inner) + [np.nan] * (max_t - len(inner))
             padded_outer.append(padded_inner)
-        # Pad outer list to max_n
         while len(padded_outer) < max_n:
             padded_outer.append([np.nan] * max_t)
         padded.append(padded_outer)
 
     return np.array(padded)
+
 
 def pad_with_nans_3d(nested_list):
     """Pad a twice-nested list with NaNs to create a rectangular NumPy array.

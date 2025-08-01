@@ -42,7 +42,7 @@ class CqaDefaults:
             "var_height": 0.0,
             "mean_diameter": 1.57,  # field mean
             "var_diameter": 0.0,  # field width diameter
-            "correlated_dimensions": "max",  # only generating data for p > 1
+            "correlated_dimensions": "rand",  # only generating data for p > 1
             "exponent": 0,
             # Simulation parameters
             "seed": 1,
@@ -58,6 +58,8 @@ class CqaDefaults:
             "record_final_flag": True,
             # "spacing": None,  # Spacing of different initialization on T dimension for which the model is run
         }
+        if self.default_par["M_fixed"] is not None:
+            self.default_par["Zeta"] = None
 
     def build_fp(self, base_path):
         """Build folder path from default parameters."""

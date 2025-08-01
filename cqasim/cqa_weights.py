@@ -19,6 +19,7 @@ def create_hebb_p_weights(tensor_dt):
         summed_W += create_hebb_weights(tensor_dt[p])
 
     # Maybe normalize the sum by P?
+    summed_W /= P
 
     return summed_W
 

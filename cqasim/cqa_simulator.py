@@ -15,7 +15,7 @@ from typing import Optional, Dict, Any
 from cqasim.cqa_defaults import CqaDefaults
 from cqasim.cqa_gendata import gen_p_data
 from cqasim.cqa_weights import create_hebb_p_weights
-from cqasim.cqa_utils import get_loop_indices, pad_with_nans
+from cqasim.cqa_utils import get_loop_indices, pad_with_nans, pad_with_nans_3d, pad_with_nans_3d_b
 from cqasim.cqa_vizutils import animate_1d_activity
 from cqasim.cqa_vectutils import calc_hessian, calc_sparsity, \
     calc_support, cosine_similarity, one_step_dynamics, relu, \
@@ -41,9 +41,14 @@ class CqaSimulator(CqaDefaults):
         # Ammend with custom entries potentially
         if par is not None:
             self.par.update(par)
+        # if self.par["M_fixed"] is not None:  # TODO: necessary?
+        #     self.par["Zeta"] = None
 
         if self.par["seed"] is not None:
             np.random.seed(self.par["seed"])
+
+        assert (self.par["Zeta"] is None) != (self.par["M_fixed"] is None), \
+            "Either Zeta or M_fixed should be None."
 
         # Initialize State variables
         # --------------------------
@@ -83,12 +88,12 @@ class CqaSimulator(CqaDefaults):
             verbose=self.par["verbose"],
             seed=self.par["seed"],
             )
+
         self.ctx["data"] = dt
         self.ctx["diams_per_nrn"] = diams_per_nrn
         self.ctx["heights_per_nrn"] = heights_per_nrn
         self.ctx["fields_per_nrn"] = fields_per_nrn
 
-        self.ctx["data_mean"] = np.mean(self.ctx["data"][0])  # TODO: p index for multid data!
         # Record simulated data
         self.ctx["sim_data"] = np.full_like(self.ctx["data"], np.nan)
         self.ctx["sim_pos"] = np.full((self.par["P"], self.par["T"]),
@@ -98,9 +103,24 @@ class CqaSimulator(CqaDefaults):
         self.ctx["W"] = create_hebb_p_weights(self.ctx["data"])
 
         # Initialize state vector V and preceding ones
-        self.ctx["V"] = self.ctx["data"][0]  # TODO: p index for multid data!
-        self.ctx["V_prec"] = self.ctx["V"].copy()
-        self.ctx["V_prec_prec"] = self.ctx["V"].copy()
+        # self.ctx["V"] = self.ctx["data"][0]  # TODO: p index for multid data!
+        # self.ctx["V_prec"] = self.ctx["V"].copy()
+        # self.ctx["V_prec_prec"] = self.ctx["V"].copy()
+
+        self.ctx["V"] = []
+        self.ctx["data_mean"] = []
+        self.ctx["V_prec"] = []
+        self.ctx["V_prec_prec"] = []  # TODO: necessary??
+
+        for p in range(len(self.ctx["data"])):
+            Vp = self.ctx["data"][p]
+            self.ctx["data_mean"].append(np.mean(Vp))
+            self.ctx["V"].append(Vp.copy())
+            self.ctx["V_prec"].append(Vp.copy())
+            self.ctx["V_prec_prec"].append(Vp.copy())
+            # self.ctx["V"].append(copy.deepcopy(Vp))
+            # self.ctx["V_prec"].append(copy.deepcopy(Vp))
+            # self.ctx["V_prec_prec"].append(copy.deepcopy(Vp))
 
         # Initialize state variables
         self.ctx["step_count"] = 0
@@ -111,8 +131,11 @@ class CqaSimulator(CqaDefaults):
         self.ctx["max_iter_reached"] = False
 
         # Record evolving states
-        lst_init = [[] for _ in range(self.par["T"])]
-        if self.par["track_quantified_dynamics"]:
+        lst_init = [[[] for _ in range(self.par["T"])]
+                    for _ in range(self.par["P"])]
+        # lst_init = [[] for _ in range(self.par["T"])]
+        # lst_init = [lst_init for _ in range(self.par["P"])]
+        if self.par["track_quantified_dynamics"]:  # deep copy is necessary here!
             self.ctx["overlap_max"] = copy.deepcopy(lst_init)
             self.ctx["overlap_max_pos"] = copy.deepcopy(lst_init)
             self.ctx["overlap_disp"] = copy.deepcopy(lst_init)
@@ -121,21 +144,24 @@ class CqaSimulator(CqaDefaults):
         # if self.par["track_full_dynamics"]:
         self.ctx["V_dynamics"] = copy.deepcopy(lst_init)
 
-    def execute_step(self, verbose=0):
+    def execute_step(self, p, verbose=0):
         """Perform one update step using Euler integration."""
         # Update variables
         self.ctx["time_step"] += 1
 
         # Update step
         aa = one_step_dynamics(
-            self.ctx["data_mean"], self.ctx["V"], self.ctx["W"],
+            self.ctx["data_mean"][p], self.ctx["V"][p], self.ctx["W"],
             self.par["g"], self.par["kb"],
         )
-        self.ctx["V"] = (1 - self.ctx["current_step_size"]) * self.ctx["V"] \
+        self.ctx["V"][p] = (1 - self.ctx["current_step_size"]) \
+            * self.ctx["V"][p] \
             + self.ctx["current_step_size"] * aa
 
         # Check convergence
-        self.ctx["v_diff"] = np.sum(np.abs(self.ctx["V"] - self.ctx["V_prec"]))
+        self.ctx["v_diff"] = np.sum(
+            np.abs(self.ctx["V"][p] - self.ctx["V_prec"][p])
+        )
         self.ctx["converged"] = self.ctx["v_diff"] < self.par["converge_eps"]
         if verbose > 0 and self.ctx["converged"]:
             print(f"Model converged after {self.ctx["time_step"]} steps.")
@@ -145,7 +171,7 @@ class CqaSimulator(CqaDefaults):
         # NOTE: v_diff is diff_vec in FS's code
         if self.ctx["time_step"] % 600 == 0 and self.ctx["v_diff"] > 0.07:
             self.ctx["current_step_size"] -= self.ctx["current_step_size"] / 3.0
-        self.ctx["V_prec"] = self.ctx["V"].copy()
+        self.ctx["V_prec"][p] = self.ctx["V"][p].copy()
 
     def run_until_convergence(
             self, init_pos, p=0, record_final_flag=None,
@@ -155,8 +181,8 @@ class CqaSimulator(CqaDefaults):
             self.par["record_final_flag"] = record_final_flag
 
         # Reinitialize variables
-        self.ctx["V"] = self.ctx["data"][p][:, init_pos]
-        self.ctx["V_prec"] = self.ctx["V"].copy()
+        self.ctx["V"][p] = self.ctx["data"][p][:, init_pos]
+        self.ctx["V_prec"][p] = self.ctx["V"][p].copy()
         self.ctx["current_step_size"] = self.par["initial_step_size"]
 
         self.ctx["time_step"] = 0
@@ -177,36 +203,37 @@ class CqaSimulator(CqaDefaults):
                 print("Maximum steps reached. Stopping.")
 
             # Execute step updating V, V_prec, time_step
-            self.execute_step(verbose=verbose)
+            self.execute_step(p, verbose=verbose)
 
             if visualize:
                 o_curr = cosine_similarity_vec(
-                    self.ctx["data"][p], self.ctx["V"])
+                    self.ctx["data"][p], self.ctx["V"][p])
                 visualize_o.append(o_curr)
-                visualize_V.append(self.ctx["V"].copy())
+                visualize_V.append(self.ctx["V"][p].copy())
 
             if self.par["track_full_dynamics"]:
-                self.ctx["V_dynamics"][init_pos].append(self.ctx["V"].copy())
+                self.ctx["V_dynamics"][p][init_pos].append(
+                    self.ctx["V"][p].copy())
 
             if self.par["track_quantified_dynamics"]:
                 o_curr = cosine_similarity_vec(self.ctx["data"][p],
-                                               self.ctx["V"])
+                                               self.ctx["V"][p])
                 o_max, o_max_pos = np.max(o_curr), np.argmax(o_curr)
                 o_curr_clip = np.maximum(o_curr - 0.2, 0)
 
-                self.ctx["overlap_max"][init_pos].append(o_max)
-                self.ctx["overlap_max_pos"][init_pos].append(o_max_pos)
-                self.ctx["overlap_disp"][init_pos].append(std_cdm(o_curr))
-                self.ctx["overlap_disp_clip"][init_pos].append(std_cdm(o_curr_clip))
-                self.ctx["v_disp"][init_pos].append(std_cdm(self.ctx["V"]))
+                self.ctx["overlap_max"][p][init_pos].append(o_max)
+                self.ctx["overlap_max_pos"][p][init_pos].append(o_max_pos)  # TODO: How to do for 2 dimensions?
+                self.ctx["overlap_disp"][p][init_pos].append(std_cdm(o_curr))
+                self.ctx["overlap_disp_clip"][p][init_pos].append(std_cdm(o_curr_clip))
+                self.ctx["v_disp"][p][init_pos].append(std_cdm(self.ctx["V"][p]))
 
         if self.par["record_final_flag"]:
             # Record only if converged.
             if self.ctx["converged"]:
                 o_curr = cosine_similarity_vec(self.ctx["data"][p],
-                                               self.ctx["V"])
+                                               self.ctx["V"][p])
                 o_max_pos = np.argmax(o_curr)
-                self.ctx["sim_data"][p][:, init_pos] = self.ctx["V"]
+                self.ctx["sim_data"][p][:, init_pos] = self.ctx["V"][p]
                 self.ctx["sim_pos"][p][init_pos] = o_max_pos
             # Set inf if timeout reached
             elif self.ctx["max_iter_reached"]:
@@ -260,7 +287,7 @@ class CqaSimulator(CqaDefaults):
                           f"var_dia={self.par['var_diameter']})")
 
                 self.run_until_convergence(
-                    init_pos, p=0,  # TODO: change p
+                    init_pos, p,
                     record_final_flag=self.par["record_final_flag"],
                     verbose=verbose)
 
@@ -279,7 +306,8 @@ class CqaSimulator(CqaDefaults):
             if fn.endswith(".npy"):
                 np.save(fp / fn, data)
             elif fn.endswith(".npz"):
-                np.savez(fp / fn, **{f"{i}": arr for i, arr in enumerate(data)})
+                # np.savez(fp / fn, **{f"{i}": arr for i, arr in enumerate(data)})
+                np.savez(fp / fn, **{"data": data})
             else:
                 print("Error: Unsupported file format. "
                       "Supported formats are: .npy, .npz")
@@ -294,7 +322,6 @@ class CqaSimulator(CqaDefaults):
 
             data = np.load(fp / fn)  # TODO: finish
 
-
             # # Load them back
             # loaded = np.load("arrays.npz")
             # arr_list_loaded = [loaded[f"arr_{i}"] for i in range(len(loaded.files))]
@@ -308,7 +335,9 @@ class CqaSimulator(CqaDefaults):
         self.data_to_save(spacing)
 
         # Create file status dir
+        # self.update_ctx_state()  # TODO: possibly add this but doesn't work yet
         file_statuses = {f: (fp / f).exists() for f in self.ctx["to_save"]}
+
         if verbose:
             print(f"[INFO] CHECKING FILE EXIST FOR: {fp.resolve()}")
             for f, exists in file_statuses.items():
@@ -336,15 +365,35 @@ class CqaSimulator(CqaDefaults):
         # Add dynamic tracking data if enabled
         if self.par["track_quantified_dynamics"]:
             self.ctx["to_save"].update({
-                f"overlap_max_{fn}.npy": pad_with_nans(self.ctx["overlap_max"]),
-                f"overlap_max_pos_{fn}.npy": pad_with_nans(self.ctx["overlap_max_pos"]),
-                f"overlap_disp_{fn}.npy": pad_with_nans(self.ctx["overlap_disp"]),
-                f"overlap_disp_clip_{fn}.npy": pad_with_nans(self.ctx["overlap_disp_clip"]),
-                f"v_disp_{fn}.npy": pad_with_nans(self.ctx["v_disp"]),
+                f"overlap_max_{fn}.npy": pad_with_nans_3d(self.ctx["overlap_max"]),
+                f"overlap_max_pos_{fn}.npy": pad_with_nans_3d(self.ctx["overlap_max_pos"]),
+                f"overlap_disp_{fn}.npy": pad_with_nans_3d(self.ctx["overlap_disp"]),
+                f"overlap_disp_clip_{fn}.npy": pad_with_nans_3d(self.ctx["overlap_disp_clip"]),
+                f"v_disp_{fn}.npy": pad_with_nans_3d(self.ctx["v_disp"]),
             })
         if self.par["track_full_dynamics"]:
-            v_dyn_arr_lst = [np.array(pos) for pos in self.ctx["V_dynamics"]]
-            self.ctx["to_save"].update({f"v_dynamics_{fn}.npz": v_dyn_arr_lst})
+            # v_dyn_arr_lst_p = []
+            # for frame_p in self.ctx["V_dynamics"]:
+            #     # print(type(frame_p))
+            #     # print(np.shape(frame_p))
+            #     # print(np.shape(frame_p[0]))
+            #     v_dyn_arr_lst = np.array(frame_p, dtype=object)
+            #     # v_dyn_arr_lst = pad_with_nans_3d_b(frame_p) # runs into memory problems somehow
+            #     print(type(v_dyn_arr_lst))
+            #     print(np.shape(v_dyn_arr_lst))
+            #     # v_dyn_arr_lst = np.array([np.array(pos) for pos in frame_p])
+            #     # v_dyn_arr_lst = pad_with_nans_3d_b([np.array(pos) for pos in frame_p])
+            #     v_dyn_arr_lst_p.append(v_dyn_arr_lst)
+            #     # v_dyn_arr_lst_p.append(pad_with_nans(v_dyn_arr_lst))
+            #     # v_dyn_arr_lst_p.append(pad_with_nans_3d(v_dyn_arr_lst))
+
+            # v_dyn_arr_lst_p = pad_with_nans_3d_b(v_dyn_arr_lst_p)
+            # v_dyn_arr_lst_p = np.array(v_dyn_arr_lst_p, dtype=object)
+
+            v_dyn_arr_lst_p = np.array(self.ctx["V_dynamics"], dtype=object)
+            self.ctx["to_save"].update(
+                {f"v_dynamics_{fn}.npz": v_dyn_arr_lst_p}
+            )
 
     def save_full_model(self, path, parameter_dir=False):
         """Save entire model."""
@@ -384,26 +433,38 @@ if __name__ == '__main__':
     # # ===================================
     fp = "./temp"
     # var_dias = np.round(np.arange(0.0, 2.0, 0.05), 2).tolist()
-    var_dias = [0.5]
-    for i, var_d in enumerate(var_dias):
-        print(f"\n Run {i}/{len(var_dias)} with diameter variance {var_d}")
+    # var_dias = [0.5]
+    var_dias = [0.9]
+    var_heights = [1.0]
+    P_dims = [1, 2]
+    for P in P_dims:
+        for i, var_d in enumerate(var_dias):
+            print(f"\n Run {i}/{len(var_dias)} with diameter variance {var_d}")
 
-        # cqa = CqaSimulator()
-        # cqa.par["var_diameter"] = var_d
-        # cqa.par["track_full_dynamics"] = True
-        # cqa.__init__(cqa.par)  # This is important!!
-        cqa = CqaSimulator(par={
-            "var_diameter": var_d,
-            "track_full_dynamics": True,
-            "track_quantified_dynamics": False,
-            "record_final_flag": True,
-        })
+            for j, var_h in enumerate(var_heights):
+                print(f"\n Run {j}/{len(var_heights)} with height variance {var_h}")
+                # cqa = CqaSimulator()
+                # cqa.par["var_diameter"] = var_d
+                # cqa.par["track_full_dynamics"] = True
+                # cqa.__init__(cqa.par)  # This is important!!
+                spacing = 100
 
-        files_exist, _ = cqa.check_files_exist(fp, spacing=500)
+                cqa = CqaSimulator(par={
+                    "Zeta": 4.4,
+                    "M_fixed": None,
+                    "var_diameter": var_d,
+                    "var_height": var_h,
+                    "P": P,
+                    "track_full_dynamics": True,
+                    "track_quantified_dynamics": True,
+                    "record_final_flag": True,
+                })
 
-        cqa.run_until_convergence_over_positions(spacing=500)
-        cqa.save_run_data(fp)
-        cqa.check_files_exist(fp)
+                files_exist, _ = cqa.check_files_exist(fp, spacing)
+
+                cqa.run_until_convergence_over_positions(spacing)
+                cqa.save_run_data(fp, spacing)
+                cqa.check_files_exist(fp, spacing)
     cqa.save_full_model(fp)
 
     # # Run and visualize for specific position

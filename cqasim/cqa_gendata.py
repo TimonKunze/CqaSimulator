@@ -2,6 +2,7 @@
 #!/usr/bin/env python3
 import numpy as np
 from itertools import combinations
+from typing import Optional
 
 from cqasim.cqa_utils import pad_with_nans
 from cqasim.cqa_vectutils import broken_gaussian_1d, gaussian_1d
@@ -47,21 +48,27 @@ def gen_p_data(P, N, T, L, Zeta,
 
             dt[p], diams, heights = gen_simplified_data(
                     N, T, L, diametro_m, diametro_delta, shift=p*50,
-                    seed=seed)
+                    seed=seed + p)
             fields = np.ones_like(diams)  # all 1 for simpl. dt
 
         # Realistic data (i.e. variation in peak width, height, and number)
         # ================================================================
         else:
             # Generate realistic data
+            if seed is None:
+                spec_seed = seed
+            else:
+                spec_seed = seed + p
             dt[p], diams, heights, fields = gen_realistic_data2(
                 N, Zeta, T, L,
                 diametro_m, diametro_delta,
-                height_m, height_delta,
-                correlated_peaks, gamma,
+                height_m,
+                height_delta,
+                correlated_peaks,
+                gamma,
                 M_fixed=M_fixed,
                 verbose=verbose,
-                seed=seed
+                seed=spec_seed,
             )
 
         diams_per_nrn.append(diams)
@@ -82,7 +89,7 @@ def gen_realistic_data2(  # TODO: write unit tests!
     gamma: float,
     M_fixed: int = None,
     verbose: int = 1,
-    seed: int = 4,
+    seed: Optional[int] = None,
 ) -> np.ndarray:
     """Generate synthetic neural activity data based on place cell statistics.
 
