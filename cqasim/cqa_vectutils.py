@@ -153,42 +153,97 @@ def calc_support(V, thresh=0.02):
 
 
 @auto_numba
-def std_cdm(o1):
-    """Compute circular dispersion measure (CDM) for weighted data.
+def std_cdm(o1, method="L1"):
+    """
+    Compute the circular dispersion measure (CDM) for weighted periodic data.
 
-    On periodic scale.
+    Two methods are supported:
+    - 'L2': Uses squared circular distances (circular standard deviation).
+      More sensitive to outliers, emphasizes tight clustering.
+    - 'L1': Uses absolute circular distances (mean absolute deviation).
+      More robust, interpretable, and less sensitive to outliers.
+
+    Parameters:
+    ----------
+    o1 : np.ndarray
+        1D array of non-negative similarity or weight values along a circular
+        domain.
+    method : str, optional
+        Dispersion method: "L1" (default) or "L2".
+
+    Returns:
+    -------
+    delq : float
+        Normalized circular dispersion. Low values indicate clustering;
+        high values suggest spread around the circle.
+        Returns np.nan if all weights are zero.
+    """
+    T = len(o1)
+    if T < 2:
+        raise ValueError("Input array must have at least two elements.")
+
+    # Ensure non-negative weights
+    o1 = np.maximum(o1, 0)
+    total_weight = np.sum(o1)
+    if total_weight == 0:
+        return np.nan
+
+    positions = np.arange(T)
+    theta = 2 * np.pi * positions / (T - 1)
+
+    # Weighted circular mean angle
+    co = np.sum(o1 * np.cos(theta)) / total_weight
+    si = np.sum(o1 * np.sin(theta)) / total_weight
+    mean_angle = np.arctan2(-si, -co) + np.pi  # in [0, 2π]
+    cm = (T - 1) * mean_angle / (2 * np.pi)
+
+    # Circular distance to mean
+    dif = np.abs(positions - cm)
+    dif = np.where(dif >= (T - 1) / 2.0, dif - (T - 1), dif)
+
+    # Compute dispersion
+    if method.upper() == "L2":
+        norm_factor = (1 / 12.0) * (T - 1) ** 2
+        delq = np.sqrt(np.sum(o1 * dif**2) / (total_weight * norm_factor))
+    elif method.upper() == "L1":
+        norm_factor = (T - 1) / 4.0
+        abs_disp = np.sum(o1 * np.abs(dif)) / total_weight
+        delq = abs_disp / norm_factor
+    else:
+        raise ValueError(f"Unsupported method '{method}'. Use 'L1' or 'L2'.")
+
+    return delq
+
+
+def std_cdm_abs(o1):
+    """
+    Compute circular dispersion measure (CDM) using absolute distance for weighted data.
 
     Parameters:
     o1  : numpy array of similarity values (should be non-negative)
 
     Returns:
-    delq : Circular dispersion measure (standard deviation in a circular space)
-            Low delq: points tightly clustered around some circular mean.
-            High delq: points spread out evenly around the circle.
+    delq : Circular dispersion measure (based on absolute circular deviation)
+           Low delq: points tightly clustered around some circular mean.
+           High delq: points spread out evenly around the circle.
     """
     T = len(o1)
-    Len = np.arange(T)  # array of positions (indices) from 0 to T
+    Len = np.arange(T)
 
-    # Ensure non-negative weights
     o1 = np.maximum(o1, 0)
-    # Convert positions to circular coordinates
-    theta = 2 * np.pi * Len / (T - 1)
-    # Compute weighted mean cosine and sine components
     total_weight = np.sum(o1)
+    if total_weight == 0:
+        return np.nan
+
+    theta = 2 * np.pi * Len / (T - 1)
     co = np.sum(o1 * np.cos(theta)) / total_weight
     si = np.sum(o1 * np.sin(theta)) / total_weight
-    # Compute the circular mean angle in radians
-    qui = np.arctan2(-si, -co) + np.pi  # Ensures output in [0, 2π]
-    # Convert circular mean back to original scale
+    qui = np.arctan2(-si, -co) + np.pi
     cm = (T - 1) * qui / (2 * np.pi)
-    # Compute absolute circular differences
-    dif = np.abs(Len - cm)
-    # Adjust distances for circularity in a vectorized way
-    dif = np.where(dif >= (T - 1) / 2.0, dif - (T - 1), dif)
-    # Compute weighted circular dispersion (similar to standard deviation)
-    delq = np.sqrt(np.sum(o1 * dif**2) / (total_weight * (1 / 12.0) * (T - 1) ** 2))
 
-    return delq  # normalized circular standard deviation.
+    dif = np.abs(Len - cm)
+    dif = np.where(dif >= (T - 1) / 2.0, dif - (T - 1), dif)
+
 
 
 @auto_numba

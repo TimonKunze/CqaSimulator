@@ -15,7 +15,7 @@ from typing import Optional, Dict, Any
 from cqasim.cqa_defaults import CqaDefaults
 from cqasim.cqa_gendata import gen_p_data
 from cqasim.cqa_weights import create_hebb_p_weights
-from cqasim.cqa_utils import get_loop_indices, pad_with_nans, pad_with_nans_3d, pad_with_nans_3d_b
+from cqasim.cqa_utils import pad_with_nans_3d  # pad_with_nans_3d_b, pad_with_nans, get_loop_indices
 from cqasim.cqa_vizutils import animate_1d_activity
 from cqasim.cqa_vectutils import calc_hessian, calc_sparsity, \
     calc_support, cosine_similarity, one_step_dynamics, relu, \
@@ -169,7 +169,7 @@ class CqaSimulator(CqaDefaults):
         # Potentially shorten step size for next step
         # (if v_diff is still high after modulo 600 steps)
         # NOTE: v_diff is diff_vec in FS's code
-        if self.ctx["time_step"] % 600 == 0 and self.ctx["v_diff"] > 0.07:
+        if self.ctx["time_step"] % 600 == 0 and self.ctx["v_diff"] > 0.07:  # TODO: maybe change to modulo 100 or so?
             self.ctx["current_step_size"] -= self.ctx["current_step_size"] / 3.0
         self.ctx["V_prec"][p] = self.ctx["V"][p].copy()
 
@@ -219,10 +219,10 @@ class CqaSimulator(CqaDefaults):
                 o_curr = cosine_similarity_vec(self.ctx["data"][p],
                                                self.ctx["V"][p])
                 o_max, o_max_pos = np.max(o_curr), np.argmax(o_curr)
-                o_curr_clip = np.maximum(o_curr - 0.2, 0)
+                o_curr_clip = np.maximum(o_curr - 0.2, 0)  # division by 0 error for no variance in height and width
 
                 self.ctx["overlap_max"][p][init_pos].append(o_max)
-                self.ctx["overlap_max_pos"][p][init_pos].append(o_max_pos)  # TODO: How to do for 2 dimensions?
+                self.ctx["overlap_max_pos"][p][init_pos].append(o_max_pos)
                 self.ctx["overlap_disp"][p][init_pos].append(std_cdm(o_curr))
                 self.ctx["overlap_disp_clip"][p][init_pos].append(std_cdm(o_curr_clip))
                 self.ctx["v_disp"][p][init_pos].append(std_cdm(self.ctx["V"][p]))
@@ -434,7 +434,7 @@ if __name__ == '__main__':
     fp = "./temp"
     # var_dias = np.round(np.arange(0.0, 2.0, 0.05), 2).tolist()
     # var_dias = [0.5]
-    var_dias = [0.9]
+    var_dias = [0.2]
     var_heights = [1.0]
     P_dims = [1, 2]
     for P in P_dims:
@@ -450,8 +450,9 @@ if __name__ == '__main__':
                 spacing = 100
 
                 cqa = CqaSimulator(par={
-                    "Zeta": 4.4,
+                    "Zeta": 4.0,  # TODO: Why is there a saving error for <3.5??
                     "M_fixed": None,
+                    "N": 5000,
                     "var_diameter": var_d,
                     "var_height": var_h,
                     "P": P,
