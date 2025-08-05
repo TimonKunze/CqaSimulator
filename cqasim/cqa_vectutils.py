@@ -153,7 +153,7 @@ def calc_support(V, thresh=0.02):
 
 
 @auto_numba
-def std_cdm(o1, method="L1"):
+def std_cdm(o1, method="L1", cutoff=0):
     """
     Compute the circular dispersion measure (CDM) for weighted periodic data.
 
@@ -181,6 +181,12 @@ def std_cdm(o1, method="L1"):
     T = len(o1)
     if T < 2:
         raise ValueError("Input array must have at least two elements.")
+
+    # Clip values with cutoff
+    # Note F.S. did it a bit differently but subtracting everything by
+    # cutoff and ensuring positive weights
+    # o1 = np.where(o1 < cutoff, 0, o1)
+    o1 = o1 - cutoff  # exact F.S. version
 
     # Ensure non-negative weights
     o1 = np.maximum(o1, 0)

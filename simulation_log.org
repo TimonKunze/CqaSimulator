@@ -1,0 +1,6 @@
+#+title: Simulation Log
+AUTHOR: Timon Kunze
+
+* [2025-08-05 15:47]
+We run the model with shorter time steps, because the higher ones that FS used (0.08) produced a lot of oscillations, the time step was only reduced after 600 steps if the model had not converged.
+We want to see the qualitative fragmented manifold behavior of a manifold gradually deforming and relocalizing somewhere else.

@@ -450,9 +450,10 @@ if __name__ == '__main__':
                 spacing = 100
 
                 cqa = CqaSimulator(par={
-                    "Zeta": 4.0,  # TODO: Why is there a saving error for <3.5??
+                    "initial_step_size": 0.04,
+                    "Zeta": 4.4,  # TODO: Why is there a saving error for <3.5??
                     "M_fixed": None,
-                    "N": 5000,
+                    "N": 999,
                     "var_diameter": var_d,
                     "var_height": var_h,
                     "P": P,
