@@ -15,7 +15,7 @@ from typing import Optional, Dict, Any
 from cqasim.cqa_defaults import CqaDefaults
 from cqasim.cqa_gendata import gen_p_data
 from cqasim.cqa_weights import create_hebb_p_weights
-from cqasim.cqa_utils import pad_with_nans_3d  # pad_with_nans_3d_b, pad_with_nans, get_loop_indices
+from cqasim.cqa_utils import pad_with_nans_3d, pad_with_nans_3d_b, pad_with_nans, get_loop_indices
 from cqasim.cqa_vizutils import animate_1d_activity
 from cqasim.cqa_vectutils import calc_hessian, calc_sparsity, \
     calc_support, cosine_similarity, one_step_dynamics, relu, \
@@ -304,6 +304,8 @@ class CqaSimulator(CqaDefaults):
 
         for fn, data in self.ctx["to_save"].items():
             if fn.endswith(".npy"):
+                print("fn", fn)
+                print(" --shape", np.shape(data))
                 np.save(fp / fn, data)
             elif fn.endswith(".npz"):
                 # np.savez(fp / fn, **{f"{i}": arr for i, arr in enumerate(data)})
@@ -341,7 +343,7 @@ class CqaSimulator(CqaDefaults):
         if verbose:
             print(f"[INFO] CHECKING FILE EXIST FOR: {fp.resolve()}")
             for f, exists in file_statuses.items():
-                status = "FOUND" if exists else "MISSING"
+                status = "FOUND" if exists else "MISSING"  # TODO: this doesn't work yet becuase spc is missing...
                 print(f"[CHECK] {f}: {status}")
 
         return file_statuses, fp
@@ -355,9 +357,9 @@ class CqaSimulator(CqaDefaults):
         self.ctx["to_save"] = {
             # Save initialization data
             f"data_{fn}.npy": self.ctx["data"],
-            f"diams_per_nrn_{fn}.npy": self.ctx["diams_per_nrn"],
-            f"heights_per_nrn_{fn}.npy": self.ctx["heights_per_nrn"],
-            f"fields_per_nrn_{fn}.npy": self.ctx["fields_per_nrn"],
+            f"diams_per_nrn_{fn}.npy": pad_with_nans_3d(self.ctx["diams_per_nrn"]),
+            f"heights_per_nrn_{fn}.npy": pad_with_nans_3d(self.ctx["heights_per_nrn"]),
+            f"fields_per_nrn_{fn}.npy": pad_with_nans_3d(self.ctx["fields_per_nrn"]),
             # Save simulated data (converged)
             f"sim_data_{fn}.npy": self.ctx["sim_data"],
             f"sim_pos_{fn}.npy": self.ctx["sim_pos"],
@@ -450,8 +452,8 @@ if __name__ == '__main__':
                 spacing = 100
 
                 cqa = CqaSimulator(par={
-                    "initial_step_size": 0.04,
-                    "Zeta": 4.4,  # TODO: Why is there a saving error for <3.5??
+                    "initial_step_size": 0.04,  # 0.04 is probably a good initial step size
+                    "Zeta": 4.4,
                     "M_fixed": None,
                     "N": 999,
                     "var_diameter": var_d,

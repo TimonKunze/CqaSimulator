@@ -153,7 +153,7 @@ def calc_support(V, thresh=0.02):
 
 
 @auto_numba
-def std_cdm(o1, method="L1", cutoff=0):
+def std_cdm(o1, method="L1", cutoff=0, center_method="mean"):
     """
     Compute the circular dispersion measure (CDM) for weighted periodic data.
 
@@ -170,6 +170,9 @@ def std_cdm(o1, method="L1", cutoff=0):
         domain.
     method : str, optional
         Dispersion method: "L1" (default) or "L2".
+    center_method : str, optional
+        Center-calculation method: either by weighted mean ("mean") or by the
+        maximum ("max").
 
     Returns:
     -------
@@ -195,13 +198,19 @@ def std_cdm(o1, method="L1", cutoff=0):
         return np.nan
 
     positions = np.arange(T)
-    theta = 2 * np.pi * positions / (T - 1)
 
-    # Weighted circular mean angle
-    co = np.sum(o1 * np.cos(theta)) / total_weight
-    si = np.sum(o1 * np.sin(theta)) / total_weight
-    mean_angle = np.arctan2(-si, -co) + np.pi  # in [0, 2π]
-    cm = (T - 1) * mean_angle / (2 * np.pi)
+    if center_method == "mean":
+        # Weighted circular mean angle
+        theta = 2 * np.pi * positions / (T - 1)
+        co = np.sum(o1 * np.cos(theta)) / total_weight
+        si = np.sum(o1 * np.sin(theta)) / total_weight
+        mean_angle = np.arctan2(-si, -co) + np.pi  # in [0, 2π]
+        cm = (T - 1) * mean_angle / (2 * np.pi)
+    elif center_method == "max":
+        cm = np.argmax(o1)
+    else:
+        raise ValueError(f"Unsupported center_method '{center_method}'."
+                         " Use 'mean' or 'max'.")
 
     # Circular distance to mean
     dif = np.abs(positions - cm)
@@ -219,37 +228,6 @@ def std_cdm(o1, method="L1", cutoff=0):
         raise ValueError(f"Unsupported method '{method}'. Use 'L1' or 'L2'.")
 
     return delq
-
-
-def std_cdm_abs(o1):
-    """
-    Compute circular dispersion measure (CDM) using absolute distance for weighted data.
-
-    Parameters:
-    o1  : numpy array of similarity values (should be non-negative)
-
-    Returns:
-    delq : Circular dispersion measure (based on absolute circular deviation)
-           Low delq: points tightly clustered around some circular mean.
-           High delq: points spread out evenly around the circle.
-    """
-    T = len(o1)
-    Len = np.arange(T)
-
-    o1 = np.maximum(o1, 0)
-    total_weight = np.sum(o1)
-    if total_weight == 0:
-        return np.nan
-
-    theta = 2 * np.pi * Len / (T - 1)
-    co = np.sum(o1 * np.cos(theta)) / total_weight
-    si = np.sum(o1 * np.sin(theta)) / total_weight
-    qui = np.arctan2(-si, -co) + np.pi
-    cm = (T - 1) * qui / (2 * np.pi)
-
-    dif = np.abs(Len - cm)
-    dif = np.where(dif >= (T - 1) / 2.0, dif - (T - 1), dif)
-
 
 
 @auto_numba
