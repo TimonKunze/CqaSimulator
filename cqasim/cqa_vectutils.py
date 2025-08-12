@@ -212,7 +212,7 @@ def std_cdm(o1, method="L1", cutoff=0, center_method="mean"):
         raise ValueError(f"Unsupported center_method '{center_method}'."
                          " Use 'mean' or 'max'.")
 
-    # Circular distance to mean
+    # Circular distance to mean/max
     dif = np.abs(positions - cm)
     dif = np.where(dif >= (T - 1) / 2.0, dif - (T - 1), dif)
 

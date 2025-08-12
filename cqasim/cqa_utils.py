@@ -75,6 +75,11 @@ def pad_with_nans_3d(nested_list):
     - Pads middle lists (e.g., per frame) to equal length
     - Returns a 3D NumPy array: (outer, middle, inner)
     """
+    # Check if input is empty or contains only empty lists
+    if not nested_list or all(len(middle) == 0 for middle in nested_list):
+        # Return an empty 3D array with shape (0, 0, 0)
+        return np.empty((0, 0, 0))
+
     # Step 1: Pad innermost lists (e.g., vectors) with NaNs
     max_inner_len = max(
         len(inner) for outer in nested_list for inner in outer

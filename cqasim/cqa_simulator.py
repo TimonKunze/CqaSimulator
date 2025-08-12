@@ -74,7 +74,7 @@ class CqaSimulator(CqaDefaults):
 
         Run manually after each parameter change!
         """
-        # Generate data
+        # Regenerate data
         dt, diams_per_nrn, heights_per_nrn, fields_per_nrn = gen_p_data(
             self.par["P"], self.par["N"],
             self.par["T"], self.par["L"],
