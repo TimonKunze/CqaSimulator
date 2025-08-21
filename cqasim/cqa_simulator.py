@@ -268,7 +268,7 @@ class CqaSimulator(CqaDefaults):
             # curr_pos = np.copy(o_max_pos)
 
     def run_until_convergence_over_positions(
-            self, spacing=20, record_final_flag=None, verbose=2):
+            self, spacing=20, record_final_flag=None, verbose=2, early_stop=False):  # TODO: implement early stopping
         """Run until model converges, for all intialization in data."""
         self.ctx["spacing"] = spacing
 

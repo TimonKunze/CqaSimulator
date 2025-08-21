@@ -3,9 +3,55 @@
 import numpy as np
 from itertools import combinations
 from typing import Optional
+from scipy.ndimage import gaussian_filter
 
 from cqasim.cqa_utils import pad_with_nans
 from cqasim.cqa_vectutils import broken_gaussian_1d, gaussian_1d
+
+
+def exponential_tuning_1d(s, mu, r0=1.0, alpha=1.0, mode="laplace", L=None):
+    """Compute exponential tuning curve with optional periodic boundaries.
+
+    Parameters
+    ----------
+    s : array-like or float
+        Stimulus value(s).
+    r0 : float
+        Baseline firing rate (scaling factor).
+    alpha : float
+        Sensitivity parameter (controls sharpness/growth).
+    mu : float
+        Preferred stimulus (center, only used in 'laplace' mode).
+    mode : str, {"laplace", "growth"}
+        - "laplace": symmetric exponential decay from mu
+        - "growth": exponential growth with stimulus
+    L : float or None
+        Domain length for periodic boundary conditions.
+        If None, no periodicity is applied.
+
+    Returns
+    -------
+    r : np.ndarray
+        Firing rate(s).
+    """
+    s = np.asarray(s)
+
+    if mode == "laplace":
+        if L is not None:
+            # Compute wrapped (periodic) distance
+            dist = np.abs(s - mu)
+            d = np.minimum(dist, L - dist)
+            return r0 * np.exp(-alpha * d)
+        else:
+            return r0 * np.exp(-alpha * np.abs(s - mu))
+
+    elif mode == "growth":
+        return r0 * np.exp(alpha * s)
+
+    else:
+        raise ValueError("mode must be 'laplace' or 'growth'")
+
+
 def generate_gauss_tuning(n_cells=100, x_range=(0, 10), num_points=1000, sigma=0.1, a=1):
     """Generate 1D Gaussian tuning curves with centers evenly spaced across the environment.
 
@@ -33,7 +79,10 @@ def generate_gauss_tuning(n_cells=100, x_range=(0, 10), num_points=1000, sigma=0
     return np.array(tuning_curves), x
 
 
-def gen_simplest_complex_tuning(N, L, T, scale=None):
+def gen_simplest_complex_tuning(
+        N, L, T, tuning_scale=0.1, weight_scale=None, noise_std=0.0,
+        thresholded=True,
+    ):
     """Generate the simplest complex tuning curves.
 
     According to Malerba et al. 2024.
@@ -42,20 +91,65 @@ def gen_simplest_complex_tuning(N, L, T, scale=None):
         N (int): number of cells.
         L (int): length of environment.
         T (int): points in environment.
+        tuning_scale (float or None): std of the weight Gaussian
+        weight_scale (float or None): std of the weight Gaussian
+        noise_std (float): standard deviation of the zero-mean noise
     Returns:
         tuning_curves (np.array): shape (num_cells, num_points)
         x (np.array): spatial positions.
 
     """
-    if scale is None:
-        scale = 1/L
+    if weight_scale is None:
+        weight_scale = np.sqrt(1/L)
 
     curves, x = generate_gauss_tuning(
-        n_cells=N, x_range=(0, L), num_points=T
+        n_cells=N, x_range=(0, L), num_points=T, sigma=tuning_scale,
     )
-    W = np.random.normal(0, scale=scale, size=(N, N))
+    W = np.random.normal(0, scale=weight_scale, size=(N, N))
 
-    return W @ curves, x
+    noise = 0.0
+    if noise_std != 0.0:
+        noise = np.random.normal(0, noise_std, size=(N, T))
+
+    y = W @ curves + noise
+
+    if thresholded:
+        y = np.maximum(y, 0.0)
+
+    return y, x
+
+
+def GaussField(N, P, var=1, sigma=1):
+    """Generate Gaussian fields for an NxP grid.
+
+    By Mainali et al. 2025.
+
+    Args:
+        N (int): Number of fields to generate.
+        P (int): Size of each field.
+        var (float): Variance of the Gaussian distribution. Default is 1.
+        sigma (float): Standard deviation for Gaussian filter.
+
+    Returns:
+        numpy.ndarray: An array of Gaussian fields.
+    """
+    fields = np.zeros((N, P))
+    for i in range(N):
+        fields[i, :] = gaussian_filter(
+            np.random.normal(0, np.sqrt(var), P), sigma=sigma, mode="reflect"
+        )
+        fields[i, :] /= np.sqrt(np.mean(fields[i, :] ** 2))
+    return fields
+
+
+def gen_Gaussian_process_tuning(N, T, var, sigma, thresh=0):
+    """Get tuning curves from a Gaussian process.
+
+    As first proposed by Mainali et al. 2025.
+    """
+    tunings = GaussField(N, T, var, sigma)
+
+    return np.maximum(tunings-thresh, 0)
 
 
 def generate_1d_grid_tuning(
@@ -135,50 +229,6 @@ def generate_1d_grid_tuning(
 #     return np.maximum(np.array(tuning_curves), 0), x
 
 
-def gen_p_data(P, N, T, L, Zeta,
-               diametro_m, diametro_delta,
-               height_m, height_delta,
-               correlated_peaks,
-               gamma,
-               correlated_dims,
-               M_fixed,
-               simplified=True,
-               verbose=0, seed=None):
-    """Gen. fully random tuning curves."""
-    if seed is not None:
-        np.random.seed(seed)
-
-    # Initialize data
-    dt = np.zeros((P, N, T))
-    diams_per_nrn = []
-    heights_per_nrn = []
-    fields_per_nrn = []
-
-    for p in range(P):
-        # Fully random tuning curves
-        # dt[p] = np.random.uniform(0.0, 1.0, (N, T))
-
-        # Simple possible model that generates complex tuning curves (Malerba, et al. 2025)
-        # TODO: TBD
-        dt[p], _ = gen_simplest_complex_tuning(N, L, T)
-
-        # Grid cell tuning curves ...
-        # ... with fixed period for the full population
-        # dt[p], _ = generate_1d_grid_tuning(
-        #     num_cells=999, x_range=(0, 1000), period=100)
-        # ... with random period for the full population
-        # dt[p], _ = generate_1d_grid_tuning(
-        #     num_cells=999, x_range=(0, 1000), period="rand", n_modules=1,
-        #     noise_std=0.1)
-        # ... with random period for the N modules
-        # dt[p], _ = generate_1d_grid_tuning(
-        #     num_cells=999, x_range=(0, 1000), period="rand", n_modules=6,
-        #     noise_std=0.1)
-
-    return dt, diams_per_nrn, heights_per_nrn, fields_per_nrn
-
-
-
 # def gen_p_data(P, N, T, L, Zeta,
 #                diametro_m, diametro_delta,
 #                height_m, height_delta,
@@ -188,7 +238,7 @@ def gen_p_data(P, N, T, L, Zeta,
 #                M_fixed,
 #                simplified=True,
 #                verbose=0, seed=None):
-#     """Gen. simplif. multidim. data with only variability in peak widths."""
+#     """Gen. fully random tuning curves."""
 #     if seed is not None:
 #         np.random.seed(seed)
 
@@ -199,57 +249,105 @@ def gen_p_data(P, N, T, L, Zeta,
 #     fields_per_nrn = []
 
 #     for p in range(P):
-#         # Generate simplified data (i.e. only variation in peak width)
-#         # ================================================================
-#         if simplified:
-#             # Peaks are non-overlapping in all dimensions, i.e. shifted peak centers
-#             if correlated_dims == "min":
-#                 shift = p*50
-#                 if verbose:
-#                     print(f"NOTE: Using shift {shift} for 'min' correlation.")
-#                 # TODO: shift should be dependent on dimetro_delta, L, T and N (>9)
-#                 # must be manually adapted here
-#             # Peaks are maximally overlapping in all dimensions, i.e. same peak center
-#             elif correlated_dims == "max":
-#                 if verbose:
-#                     print("NOTE: Using 'max' correlation with overlapping peaks.")
-#                 shift = 0
-#             else:
-#                 raise ValueError("As of now, correlations can only be 'max' or 'min'.")
+#         # Fully random tuning curves
+#         # dt[p] = np.random.uniform(0.0, 1.0, (N, T))
 
-#             dt[p], diams, heights = gen_simplified_data(
-#                     N, T, L, diametro_m, diametro_delta, shift=p*50,
-#                     seed=seed + p)
-#             fields = np.ones_like(diams)  # all 1 for simpl. dt
+#         # Simple possible model that generates complex tuning curves (Malerba, et al. 2025)
+#         # TODO: TBD
+#         # dt[p], _ = gen_simplest_complex_tuning(N, L, T, tuning_scale=0.1)
+#         # dt[p], _ = gen_simplest_complex_tuning(N, L, T, tuning_scale=30.0)
 
-#         # Realistic data (i.e. variation in peak width, height, and number)
-#         # ================================================================
-#         else:
-#             # Generate realistic data
-#             if seed is None:
-#                 spec_seed = seed
-#             else:
-#                 spec_seed = seed + p
-#             dt[p], diams, heights, fields = gen_realistic_data2(
-#                 N, Zeta, T, L,
-#                 diametro_m, diametro_delta,
-#                 height_m,
-#                 height_delta,
-#                 correlated_peaks,
-#                 gamma,
-#                 M_fixed=M_fixed,
-#                 verbose=verbose,
-#                 seed=spec_seed,
-#             )
+#         # # Tuning curves from Gaussian process
+#         # dt[p] = gen_Gaussian_process_tuning(N, T, var=1, sigma=30, thresh=1.0)
 
-#         diams_per_nrn.append(diams)
-#         heights_per_nrn.append(heights)
-#         fields_per_nrn.append(fields)
-
-#     if verbose > 0:
-#         print(f"Avg. corr. betw. dimensions = {avg_dim_correlations(dt):.3f}.")
+#         # Grid cell tuning curves ...
+#         # ... with fixed period for the full population
+#         # dt[p], _ = generate_1d_grid_tuning(
+#         #     num_cells=999, x_range=(0, 1000), period=100)
+#         # ... with random period for the full population
+#         dt[p], _ = generate_1d_grid_tuning(
+#             num_cells=999, x_range=(0, 1000), period="rand", n_modules=1,
+#             noise_std=0.0)
+#         # ... with random period for the N modules
+#         # dt[p], _ = generate_1d_grid_tuning(
+#         #     num_cells=999, x_range=(0, 1000), period="rand", n_modules=6,
+#         #     noise_std=0.1)
 
 #     return dt, diams_per_nrn, heights_per_nrn, fields_per_nrn
+
+
+
+def gen_p_data(P, N, T, L, Zeta,
+               diametro_m, diametro_delta,
+               height_m, height_delta,
+               correlated_peaks,
+               gamma,
+               correlated_dims,
+               M_fixed,
+               simplified=True,
+               verbose=0, seed=None):
+    """Gen. simplif. multidim. data with only variability in peak widths."""
+    if seed is not None:
+        np.random.seed(seed)
+
+    # Initialize data
+    dt = np.zeros((P, N, T))
+    diams_per_nrn = []
+    heights_per_nrn = []
+    fields_per_nrn = []
+
+    for p in range(P):
+        # Generate simplified data (i.e. only variation in peak width)
+        # ================================================================
+        if simplified:
+            # Peaks are non-overlapping in all dimensions, i.e. shifted peak centers
+            if correlated_dims == "min":
+                shift = p*50
+                if verbose:
+                    print(f"NOTE: Using shift {shift} for 'min' correlation.")
+                # TODO: shift should be dependent on dimetro_delta, L, T and N (>9)
+                # must be manually adapted here
+            # Peaks are maximally overlapping in all dimensions, i.e. same peak center
+            elif correlated_dims == "max":
+                if verbose:
+                    print("NOTE: Using 'max' correlation with overlapping peaks.")
+                shift = 0
+            else:
+                raise ValueError("As of now, correlations can only be 'max' or 'min'.")
+
+            dt[p], diams, heights = gen_simplified_data(
+                    N, T, L, diametro_m, diametro_delta, shift=p*50,
+                    seed=seed + p)
+            fields = np.ones_like(diams)  # all 1 for simpl. dt
+
+        # Realistic data (i.e. variation in peak width, height, and number)
+        # ================================================================
+        else:
+            # Generate realistic data
+            if seed is None:
+                spec_seed = seed
+            else:
+                spec_seed = seed + p
+            dt[p], diams, heights, fields = gen_realistic_data2(
+                N, Zeta, T, L,
+                diametro_m, diametro_delta,
+                height_m,
+                height_delta,
+                correlated_peaks,
+                gamma,
+                M_fixed=M_fixed,
+                verbose=verbose,
+                seed=spec_seed,
+            )
+
+        diams_per_nrn.append(diams)
+        heights_per_nrn.append(heights)
+        fields_per_nrn.append(fields)
+
+    if verbose > 0:
+        print(f"Avg. corr. betw. dimensions = {avg_dim_correlations(dt):.3f}.")
+
+    return dt, diams_per_nrn, heights_per_nrn, fields_per_nrn
 
 
 def gen_realistic_data2(  # TODO: write unit tests!
@@ -373,7 +471,8 @@ def gen_realistic_data2(  # TODO: write unit tests!
             centro = dovesono_interno[j]
             altezza = picchi[j]
             radius = diametri[j] / 2.0
-            dati[i, :] += broken_gaussian_1d(x_general, centro, altezza, radius, L)
+            dati[i, :] += broken_gaussian_1d(x_general, centro, altezza, radius, L)  # TODO: change
+            # dati[i, :] += exponential_tuning_1d(x_general, centro, r0=altezza, alpha=1/radius, L=L)
 
     # print(np.shape(diams_per_nrn))
     # print(np.shape(heights_per_nrn))
